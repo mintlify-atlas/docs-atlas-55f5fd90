@@ -1,0 +1,75 @@
+---
+title: Manual Scheduling
+description: Learn how to manually schedule pods to specific nodes in Kubernetes without relying on the built-in scheduler.
+---
+
+There are different ways to manually schedule a pod on a node. You may not want to rely on the Kubernetes built-in scheduler, you may not have a scheduler in your cluster, or you may want to schedule the pod yourself.
+
+Scheduling works like this:
+1. **What to schedule?** — Pod
+2. **Which node to schedule?**
+3. **Schedule/bind pod to node**
+
+## How the scheduler uses `nodeName`
+
+Every pod has a field called `nodeName` that is not set by default. Normally you do not set this field — Kubernetes auto-populates it. Here is how:
+
+<Steps>
+  <Step title="Identify unscheduled pods">
+    The scheduler checks all pods and finds those where `nodeName` is not set.
+  </Step>
+  <Step title="Run the scheduling algorithm">
+    The scheduler runs its algorithm to identify the right node for the pod.
+  </Step>
+  <Step title="Bind the pod">
+    The scheduler sets `nodeName` to the chosen node name by creating a binding object.
+  </Step>
+</Steps>
+
+## Scenario 1: No scheduler — set `nodeName` at creation time
+
+If you do not have a scheduler in your cluster, deployed pods will remain in **Pending** state because nothing is monitoring and scheduling them.
+
+You can manually assign a pod to a node by specifying `nodeName` in the pod spec at creation time.
+
+<Warning>
+  You can only specify `nodeName` at **pod creation time**. Kubernetes does not allow modifying this field on an existing pod.
+</Warning>
+
+```yaml title="sample.yaml"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sample-pod
+spec:
+  containers:
+    - name: ubuntu
+      image: ubuntu
+  nodeName: node01
+```
+
+## Scenario 2: Pod already exists — use a Binding object
+
+If your pod is already created and you want to assign it to a node, you must create a **Binding object** and send a POST request to the pod's binding API.
+
+```yaml title="binding.yaml"
+apiVersion: v1
+kind: Binding
+metadata:
+  name: sample-binding
+target:
+  apiVersion: v1
+  kind: Node
+  name: node03
+```
+
+<Note>
+  You must convert the YAML to JSON format before sending the POST request.
+</Note>
+
+```bash
+curl -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"apiVersion": "v1","kind": "Binding","metadata": {"name": "sample-binding"},"target": {"apiVersion": "v1","kind": "Node","name": "node03"}}' \
+  http://{server-url}/api/v1/namespaces/{namespace}/pods/{pod-name}/binding
+```

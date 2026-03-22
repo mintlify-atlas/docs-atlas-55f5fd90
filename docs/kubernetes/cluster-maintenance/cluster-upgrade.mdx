@@ -1,0 +1,128 @@
+---
+title: Cluster Upgrade
+description: Step-by-step guide to upgrading a Kubernetes cluster using kubeadm, covering both the master node and worker nodes.
+---
+
+## Introduction
+
+Kubernetes components can each run their own versions. For example:
+
+| Component | Example version |
+| --- | --- |
+| kube-apiserver | v1.32.0 |
+| kube-scheduler | v1.32.0 |
+| kubelet | v1.32.0 |
+| kube-proxy | v1.32.0 |
+| controller-manager | v1.32.0 |
+| etcd | v3.5.17 |
+| coredns | v1.12.0 |
+
+<Info>
+It is not mandatory for all components to share the same version. However, `kube-apiserver` is the primary component — all other components like `kube-scheduler`, `kubelet`, `kube-proxy`, and `controller-manager` must be at a version **less than or equal to** the `kube-apiserver` version to avoid compatibility issues. The `etcd` and `coredns` versions are independent.
+</Info>
+
+If you deployed your cluster with `kubeadm`, you can use it to plan and execute the upgrade:
+
+```bash
+kubeadm upgrade plan          # shows available upgrade paths and component versions
+kubeadm upgrade apply <version>
+```
+
+## Upgrade process
+
+This example upgrades a cluster with one master and two worker nodes from `v1.21.0` to `v1.22.0`. Replace version numbers with your actual target version.
+
+<Steps>
+
+<Step title="Upgrade the master node">
+
+When the master node is being upgraded, control plane components (`kube-apiserver`, `kube-scheduler`, `kube-controller-manager`) go down temporarily. Worker nodes continue to run their existing workloads, but you **cannot deploy, modify, or delete resources** while the control plane is unavailable.
+
+```bash
+# Replace x with your target minor version, e.g. 1.31, 1.32
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.x/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.x/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo apt-get update
+
+sudo apt update
+sudo apt-cache madison kubeadm   # copy the version you want to upgrade to
+
+# Replace x in 1.31.x-* with the latest patch version
+sudo apt-mark unhold kubeadm && \
+sudo apt-get update && sudo apt-get install -y kubeadm='1.31.x-*' && \
+sudo apt-mark hold kubeadm
+
+kubeadm version
+sudo kubeadm upgrade plan
+
+# Replace x with the patch version you picked
+sudo kubeadm upgrade apply v1.31.x
+
+# kubectl get nodes still shows the old version at this point
+# because it reports the kubelet version, not the kube-apiserver version
+# Drain the node before upgrading kubelet
+kubectl drain <node-to-drain> --ignore-daemonsets
+
+# Replace x in 1.31.x-* with the latest patch version
+sudo apt-mark unhold kubelet kubectl && \
+sudo apt-get update && sudo apt-get install -y kubelet='1.31.x-*' kubectl='1.31.x-*' && \
+sudo apt-mark hold kubelet kubectl
+
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+
+kubectl uncordon <node-to-uncordon>
+```
+
+</Step>
+
+<Step title="Upgrade the worker nodes">
+
+There are three strategies for upgrading worker nodes:
+
+<CardGroup cols={3}>
+  <Card title="All at once" icon="bolt">
+    Upgrade all worker nodes simultaneously. Simple, but causes **downtime** as all pods are evicted at once.
+  </Card>
+  <Card title="One at a time" icon="arrow-right">
+    Upgrade nodes sequentially. Pods are rescheduled to remaining nodes. **No downtime**, but takes longer.
+  </Card>
+  <Card title="Add new nodes" icon="plus">
+    Provision new nodes with the new version, move workloads to them, then remove the old nodes. Best for **cloud providers**. **No downtime**.
+  </Card>
+</CardGroup>
+
+The following commands upgrade one worker node at a time. Repeat for each worker node.
+
+```bash
+# Replace x with your target minor version, e.g. 1.29, 1.31, 1.32
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.x/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.x/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo apt-get update
+
+# Replace x in 1.31.x-* with the latest patch version
+sudo apt-mark unhold kubeadm && \
+sudo apt-get update && sudo apt-get install -y kubeadm='1.31.x-*' && \
+sudo apt-mark hold kubeadm
+
+# Run upgrade node on the worker node itself
+sudo kubeadm upgrade node
+
+# Run this on the control plane node to drain the worker
+kubectl drain <node-to-drain> --ignore-daemonsets
+
+# Replace x in 1.31.x-* with the latest patch version
+sudo apt-mark unhold kubelet kubectl && \
+sudo apt-get update && sudo apt-get install -y kubelet='1.31.x-*' kubectl='1.31.x-*' && \
+sudo apt-mark hold kubelet kubectl
+
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+
+# Run this on the control plane node to uncordon the worker
+kubectl uncordon <node-to-uncordon>
+```
+
+</Step>
+
+</Steps>

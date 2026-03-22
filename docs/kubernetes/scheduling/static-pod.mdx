@@ -1,0 +1,93 @@
+---
+title: Static Pod
+description: Understand how kubelet manages static pods directly from a manifest directory, without the kube-apiserver or kube-scheduler.
+---
+
+## Concept
+
+Normally, the **kubelet** receives instructions from the **kube-apiserver** to deploy pods. The decision is made by the **kube-scheduler**, and information is stored in **etcd**.
+
+But what if there is no kube-apiserver, kube-scheduler, etcd, or master node? Can the node operate independently?
+
+Yes — the **kubelet** can run pods **without the master**, because it knows how to create and run pods on its own. To create **static pods**, you provide pod definition files to the kubelet from a specific directory (typically `/etc/kubernetes/manifests`).
+
+### How kubelet manages static pods
+
+- kubelet **regularly checks** the manifest directory for pod definition files and creates the pods, keeping them alive.
+- kubelet **tries to restart** a pod if it stops running.
+- kubelet **recreates the pod** if the manifest file content changes.
+- kubelet **deletes the pod** if the manifest file is removed.
+
+<Note>
+  Static pods are managed by the kubelet without any intervention from the master. You can only create Pods as static pods — not Deployments or Services — because the kubelet only understands Pods.
+</Note>
+
+## Why use static pods?
+
+Static pods are used to deploy the Kubernetes **control plane components** (such as kube-apiserver, etcd, kube-controller-manager) as pods on a node. The kubelet ensures they stay running and automatically restarts them if they fail.
+
+This is exactly **how `kubeadm` sets up a Kubernetes cluster**. When you list pods in the `kube-system` namespace, you can see all control plane components running as pods.
+
+## Configuring the manifest directory
+
+Before creating static pods, configure the kubelet to watch a specific directory.
+
+<Info>
+  When inspecting an existing cluster, first check whether the `--pod-manifest-path` option is set in the `kubelet.service` file. If not, look for the `--config` option and then check the referenced config file for the `staticPodPath` setting.
+</Info>
+
+<Tabs>
+  <Tab title="Direct flag">
+    Add `--pod-manifest-path` directly to the `kubelet.service` file, found in `/etc/systemd/system/kubelet.service.d`.
+
+    ```bash title="kubelet.service"
+    ExecStart=/usr/bin/kubelet \\
+      ....
+      --pod-manifest-path=/etc/kubernetes/manifests \\
+      ....
+    ```
+  </Tab>
+  <Tab title="Config file (kubeadm approach)">
+    Create a config file with `staticPodPath`, then reference it with `--config` in the service file.
+
+    ```yaml title="kubelet-config.yaml"
+    staticPodPath: /etc/kubernetes/manifests
+    ```
+
+    ```bash title="kubelet.service"
+    ExecStart=/usr/bin/kubelet \\
+      ....
+      --config=kubelet-config.yaml \\
+      ....
+    ```
+  </Tab>
+</Tabs>
+
+## Viewing static pods
+
+When static pods are created, you can observe them with `docker ps` (since `kubectl` requires the kube-apiserver). Once the cluster is running, the kube-apiserver becomes aware of static pods and creates **read-only mirror pod objects** for them.
+
+<Warning>
+  You can only **view** static pod details from the kube-apiserver — you cannot edit or delete them through it. To delete a static pod, remove its manifest file from the configured directory.
+</Warning>
+
+```bash
+kubectl get pods
+# output
+NAME                 READY   STATUS    RESTARTS   AGE
+static-pod-node01    1/1     Running   0          1m
+```
+
+<Note>
+  Static pod names are automatically suffixed with the node name.
+</Note>
+
+## Static pods vs. DaemonSets
+
+| | Static Pod | DaemonSet |
+| --- | --- | --- |
+| **Created by** | kubelet | kube-apiserver (DaemonSet Controller) |
+| **Use case** | Deploy control plane components | Deploy agents (monitoring, logging, etc.) on nodes |
+| **Scheduler** | Ignored by kube-scheduler | Ignored by kube-scheduler |
+
+The kube-scheduler has no effect on pods created as static pods or managed by DaemonSets.

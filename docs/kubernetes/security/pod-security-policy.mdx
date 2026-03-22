@@ -1,0 +1,151 @@
+---
+title: Pod Security Policy
+description: An overview of the deprecated Pod Security Policy (PSP) admission controller and how it was used to restrict insecure pod configurations.
+---
+
+## Overview
+
+<Warning>
+Pod Security Policy (PSP) was **deprecated in Kubernetes v1.21** and **removed in v1.25**. For current clusters, use [Pod Security Standards and Pod Security Admission](/docs/kubernetes/security/pod-security-standard-and-admissions) instead, or a policy-as-code solution such as Kyverno, Open Policy Agent (OPA), or Gatekeeper.
+</Warning>
+
+Pod Security Policy (PSP) was a cluster-level admission controller that allowed you to **define conditions a pod must meet** in order to run in the cluster. It not only blocked non-compliant pods from being created but also could **mutate pod configurations** using `defaultAddCapabilities`.
+
+To enable PSP, add `PodSecurityPolicy` to the `--enable-admission-plugins` flag on the kube-apiserver:
+
+```yaml title="kube-apiserver.yaml"
+- kube-apiserver
+  - --enable-admission-plugins=NodeRestriction,PodSecurityPolicy
+```
+
+## Usage and concept
+
+Consider the following insecure pod configuration:
+
+```yaml title="sample-pod.yaml"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sample
+spec:
+  containers:
+    - name: ubuntu
+      image: ubuntu
+      securityContext:
+        privileged: true
+        runAsUser: 0
+        capabilities:
+          add: ["CAP_SYS_BOOT"]
+  volumes:
+    - name: data-volume
+      hostPath:
+        path: /data
+```
+
+This pod runs as a **privileged user** with **root access**, has the `CAP_SYS_BOOT` capability (which allows rebooting the host), and mounts the **host filesystem** — all of which are insecure configurations.
+
+<Steps>
+
+<Step title="Create a Pod Security Policy">
+
+Define a PSP to block the insecure configurations above:
+
+```yaml title="pod-security-policy.yaml"
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: restricted-psp
+spec:
+  privileged: false
+  seLinux:
+    rule: RunAsAny
+  runAsUser:
+    rule: MustRunAsNonRoot
+  fsGroup:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+    - 'persistentVolumeClaim'
+  requiredDropCapabilities:
+    - 'CAP_SYS_BOOT'
+  defaultAddCapabilities:
+    - 'CAP_SYS_TIME'
+```
+
+This policy:
+- **Rejects** pods with `privileged: true`
+- **Rejects** pods running as `runAsUser: 0` (root)
+- **Rejects** pods using `hostPath` volumes (only `persistentVolumeClaim` is permitted)
+- **Rejects** pods with the `CAP_SYS_BOOT` capability
+- **Adds** `CAP_SYS_TIME` to all pods by default, even if not specified
+
+</Step>
+
+<Step title="Authorize the Pod Security Policy with RBAC">
+
+Enabling the PSP admission controller alone is not enough. Without authorizing service accounts to **use** a PSP, the admission controller cannot communicate with the security policies API and will **reject all pod creation requests**.
+
+Every pod has a service account (defaulting to `default` in the namespace). Create a Role and RoleBinding to let the default service account use the PSP:
+
+<Tabs>
+  <Tab title="Role">
+
+```yaml title="role.yaml"
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: psp-role
+rules:
+  - apiGroups: ['policy']
+    resources: ['podsecuritypolicies']
+    resourceNames: ['restricted-psp']
+    verbs: ['use']
+```
+
+  </Tab>
+  <Tab title="RoleBinding">
+
+```yaml title="rolebinding.yaml"
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: psp-rolebinding
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default
+roleRef:
+  kind: Role
+  name: psp-role
+  apiGroup: rbac.authorization.k8s.io
+```
+
+  </Tab>
+</Tabs>
+
+</Step>
+
+<Step title="Create a pod that complies with the policy">
+
+```yaml title="sample-pod.yaml"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sample
+spec:
+  containers:
+    - name: ubuntu
+      image: ubuntu
+      securityContext:
+        privileged: false
+        runAsUser: 1000
+  volumes:
+    - name: data-volume
+      persistentVolumeClaim:
+        claimName: my-pvc
+```
+
+</Step>
+
+</Steps>

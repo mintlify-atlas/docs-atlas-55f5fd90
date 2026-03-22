@@ -1,0 +1,300 @@
+---
+title: Cluster Components Security
+description: Security best practices for Kubernetes cluster components including the controller manager, scheduler, kubelet, kube-proxy, etcd, container runtime, networking, and storage.
+---
+
+## Secure controller manager and scheduler
+
+**Summary of best practices:**
+- Isolate the controller manager and scheduler on a dedicated node
+- Apply RBAC to limit what each component can do
+- Secure all inter-component communication with TLS
+- Enable audit logging and monitor with Prometheus and Grafana
+- Use secure default configurations and protect configuration files
+- Run the latest Kubernetes version
+- Regularly scan for vulnerabilities
+
+Run the controller manager and scheduler on a **separate node** from application workloads. If an application pod is compromised, the control plane components remain unaffected.
+
+Apply **RBAC** to constrain each component. For example, the replication controller only needs to manage pod replicas and the scheduler only needs to schedule pods. Limiting their permissions reduces the blast radius of a compromise.
+
+Use **TLS** for all communication between cluster components and **rotate certificates** regularly.
+
+Enable **audit logging** and use Prometheus and Grafana to monitor controller manager and scheduler activity.
+
+## Secure kubelet
+
+**Summary of best practices:**
+- Set the authorization mode to `Webhook`
+- Disable anonymous access and enable supported authentication mechanisms
+
+Kubelet exposes two ports:
+
+| Port | Description |
+| --- | --- |
+| 10250 | Serves the kubelet API with **full access** |
+| 10255 | Serves a **read-only, unauthenticated** kubelet API (deprecated in recent versions) |
+
+To identify the kubelet configuration file:
+
+```bash
+ps -aux | grep kubelet
+cat <configuration-file-path>
+```
+
+### Set authorization mode to Webhook
+
+By default, the kubelet allows all requests without authorization. Set the authorization mode to `Webhook` so the kubelet forwards authorization decisions to the kube-apiserver.
+
+```yaml title="/var/lib/kubelet/config.yaml"
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+authorization:
+  mode: Webhook
+```
+
+### Disable anonymous access and enable authentication
+
+By default, the kubelet allows requests from anonymous users (`system:anonymous`, group `system:unauthenticated`). Disable this and require certificate-based authentication.
+
+```yaml title="/var/lib/kubelet/config.yaml"
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+authentication:
+  anonymous:
+    enabled: false
+  x509:
+    clientCAFile: /etc/kubernetes/pki/ca.crt
+```
+
+Supported authentication mechanisms:
+- **Certificate-based**
+- **API bearer token-based**
+
+After updating the configuration, restart the kubelet:
+
+```bash
+systemctl restart kubelet.service
+
+# Now requests require a valid client certificate
+curl -k https://localhost:10250/pods \
+  --cert /etc/kubernetes/pki/apiserver-kubelet-client.crt \
+  --key /etc/kubernetes/pki/apiserver-kubelet-client.key
+```
+
+## Secure container runtime
+
+Notable CVEs in container runtimes:
+
+| CVE ID | Description |
+| --- | --- |
+| CVE-2019-5736 | Allows overwriting the host runc binary, gaining root execution on the host |
+| CVE-2020-15257 | Allows access to containerd API without proper authentication |
+| CVE-2021-30465 | Allows container escape and arbitrary code execution on the host |
+| CVE-2021-32760 | Allows denial-of-service via malformed containerd API requests |
+| CVE-2022-23648 | Allows unauthorized access to containerd API |
+| CVE-2022-0811 | Allows privilege escalation in CRI-O |
+
+Best practices for container runtime security:
+
+- **Regularly update** the container runtime to the latest version.
+- **Run containers with least privilege** and avoid running as root:
+  ```yaml
+  spec:
+    securityContext:
+      runAsUser: 2000
+      runAsGroup: 3000
+  ```
+- **Set a read-only root filesystem** to prevent writes:
+  ```yaml
+  spec:
+    securityContext:
+      readOnlyRootFilesystem: true
+  ```
+- **Limit resource consumption** (CPU, Memory) to prevent denial-of-service:
+  ```yaml
+  spec:
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+  ```
+- **Apply security profiles** like AppArmor or SELinux:
+
+  <Tabs>
+    <Tab title="SELinux">
+
+  SELinux enforces mandatory access control policies at the kernel level:
+
+  ```yaml title="sample.yaml"
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: sample-pod
+  spec:
+    containers:
+    - name: sample-container
+      image: nginx
+      securityContext:
+        seLinuxOptions:
+          user: "system_u"
+          role: "system_r"
+          type: "svirt_lxc_net_t"
+          level: "s0:c123,c456"
+  ```
+
+    </Tab>
+    <Tab title="AppArmor">
+
+  AppArmor restricts program capabilities using profiles defined on the node:
+
+  ```yaml
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: sample-pod
+    annotations:
+      container.apparmor.security.beta.kubernetes.io/sample-container: localhost/sample-profile
+  spec:
+    containers:
+    - name: sample-container
+      image: nginx
+  ```
+
+    </Tab>
+  </Tabs>
+
+- **Transition to supported runtimes** like containerd or CRI-O. Docker is deprecated in Kubernetes.
+- **Enable monitoring and logging** (Prometheus, Grafana) and audit logging to detect suspicious activity.
+
+## Secure kube-proxy
+
+**Summary of best practices:**
+- Set configuration file permissions to 644 or stricter, owned by `root:root`
+- Secure communication with TLS between kube-proxy and kube-apiserver
+- Set kube-proxy with least privilege
+- Apply network policies to restrict access to the kube-proxy service
+- Enable audit logging and monitoring
+- Regularly scan and update for vulnerabilities
+
+Locate the kube-proxy configuration:
+
+```bash
+# If kube-proxy is deployed as a pod
+kubectl describe pod/kube-proxy-xxxx -n kube-system
+
+# If deployed as a systemd service
+ps -aux | grep kube-proxy
+```
+
+Set correct file permissions on the configuration file:
+
+```bash
+ls -l /var/lib/kube-proxy/config.conf
+chmod 644 /var/lib/kube-proxy/config.conf
+chown root:root /var/lib/kube-proxy/config.conf
+```
+
+<Note>
+`644` allows the owner to read and modify the file, while the group and others can only read it (`r=4, w=2, x=1`).
+</Note>
+
+The kubeconfig used by kube-proxy secures communication with TLS:
+
+```yaml title="/var/lib/kube-proxy/kubeconfig.conf"
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    certificate-authority: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    server: https://kind-cluster-control-plane:6443
+  name: default
+contexts:
+- context:
+    cluster: default
+    namespace: default
+    user: default
+  name: default
+current-context: default
+users:
+- name: default
+  user:
+    tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+```
+
+Enable audit logging for kube-proxy activity:
+
+```yaml title="audit.yaml"
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+  - level: Metadata
+    resources:
+      - group: ""
+        resources: ["pods", "services", "endpoints"]
+      - group: "extensions"
+        resources: ["ingresses"]
+      - group: "networking.k8s.io"
+        resources: ["networkpolicies"]
+  - level: RequestResponse
+    users: ["system:kube-proxy"]
+    verbs: ["create", "update", "patch", "delete"]
+    resources:
+      - group: ""
+        resources: ["pods", "services", "endpoints"]
+      - group: "extensions"
+        resources: ["ingresses"]
+      - group: "networking.k8s.io"
+        resources: ["networkpolicies"]
+```
+
+## Secure ETCD
+
+**Summary of best practices:**
+- Encrypt data at rest (etcd and persistent volumes)
+- Perform regular backups
+- Secure all communication with TLS
+
+Refer to [Backup and Restore Methods](/docs/kubernetes/cluster-maintenance/backup-and-restore-methods) for etcd backup procedures.
+
+## Secure container networking
+
+By default, Kubernetes networking is **flat and open** — all pods can communicate with each other without restriction.
+
+**Best practices:**
+- Implement **network policies** to restrict ingress and egress traffic between pods.
+- Use a **service mesh** like Istio for mutual TLS, encrypted and authenticated pod communication, traffic management, and observability.
+- Encrypt network traffic between pods using **IPSec** or **WireGuard**.
+- **Isolate sensitive workloads** using namespaces and apply namespace-level network policies to reduce the impact of a compromised workload.
+
+## Secure storage
+
+Storage security risks in Kubernetes:
+- **Misconfigured storage access** — allows attackers to access sensitive data
+- **Lack of encryption** — can lead to data leakage
+- **Insufficient backup** — can result in data loss from failures or attacks
+
+**Best practices:**
+- **Encrypt data at rest** using your cloud provider's encryption options (e.g., AWS EBS, Azure Disk Storage).
+- Use **RBAC** to limit storage access to authorized users only.
+- Use **StorageClass** to enforce encryption, performance limits, and backup policies:
+
+  ```yaml title="sample-storage-class.yaml"
+  apiVersion: storage.k8s.io/v1
+  kind: StorageClass
+  metadata:
+    name: example-st
+  provisioner: ebs.csi.aws.com
+  parameters:
+    csi.storage.k8s.io/fstype: xfs
+    type: io1
+    iopsPerGB: "50"
+    encrypted: "true"
+  ```
+
+  <Note>
+  IOPS (Input/Output Operations Per Second) defines the read/write throughput of the volume. Higher IOPS means better performance.
+  </Note>
+
+- **Regularly back up data** and prepare a disaster recovery plan. Tools: Velero, Heptio Ark, Kasten.
+- **Monitor and audit storage metrics** to detect suspicious activity and enable audit logging.

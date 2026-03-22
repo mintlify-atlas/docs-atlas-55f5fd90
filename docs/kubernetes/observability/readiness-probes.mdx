@@ -1,0 +1,124 @@
+---
+title: Readiness Probes
+description: Configure readiness probes to control when a Kubernetes container starts receiving traffic, using HTTP, TCP, and exec health checks.
+---
+
+## Pod setup process, status, and conditions
+
+Before using readiness probes, it helps to understand how a pod reaches the running state:
+
+<Steps>
+  <Step title="Schedule">
+    The scheduler determines which node to place the pod on.
+  </Step>
+  <Step title="Start the container">
+    The node pulls the image, converts it into a container, and starts it.
+  </Step>
+  <Step title="Ready condition">
+    Kubernetes checks that all containers are ready. By default, it assumes a container is ready to accept traffic as soon as it starts.
+  </Step>
+  <Step title="Running status">
+    Once all containers meet the ready condition, the pod reaches the running status and traffic is routed to it.
+  </Step>
+</Steps>
+
+<Note>
+  The **ready condition** indicates the application inside the pod is ready to accept user traffic. Without a readiness probe, Kubernetes sets this to `true` as soon as the container starts — which may be before your application is actually ready.
+</Note>
+
+## What are readiness probes?
+
+Readiness probes **determine whether a container is ready to accept traffic**. If the probe fails, kubelet removes the pod from service endpoints so no traffic is routed to it. The probe continues running, and the pod is re-added when the probe passes again.
+
+Common readiness probe use cases:
+- Test that the web application is online and responding
+- Check whether a database TCP connection is ready
+- Run a custom script to determine if the application has finished initializing
+
+**Probe types:**
+
+<CardGroup cols={3}>
+  <Card title="HTTP" icon="globe">
+    Sends an HTTP GET request to the container. A 2xx or 3xx response means ready.
+  </Card>
+  <Card title="TCP" icon="network-wired">
+    Opens a TCP socket to the container. A successful connection means ready.
+  </Card>
+  <Card title="exec" icon="terminal">
+    Runs a command inside the container. An exit code of `0` means ready.
+  </Card>
+</CardGroup>
+
+## Usage
+
+<Tabs>
+  <Tab title="HTTP">
+    ```yaml readiness-probes.yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: sample-pod
+    spec:
+      containers:
+        - name: web-app
+          image: webapp
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 5 # wait before performing the 1st probe
+            periodSeconds: 3       # how often to perform the probe
+            failureThreshold: 5    # stop routing traffic after this many failures (default 3)
+    ```
+  </Tab>
+  <Tab title="TCP">
+    ```yaml readiness-probes.yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: sample-pod
+    spec:
+      containers:
+        - name: web-app
+          image: webapp
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            failureThreshold: 5
+    ```
+
+    kubelet attempts to open a socket to the container on port `8080`. A successful connection means the container is healthy.
+  </Tab>
+  <Tab title="exec">
+    ```yaml readiness-probes.yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: sample-pod
+    spec:
+      containers:
+        - name: web-app
+          image: webapp
+          readinessProbe:
+            exec:
+              command:
+                - cat
+                - /app/healthy
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            failureThreshold: 5
+    ```
+
+    The command returns exit code `0` on success. Any other exit code is treated as a failure.
+  </Tab>
+</Tabs>
+
+## Key probe fields
+
+| Field | Description |
+|---|---|
+| `initialDelaySeconds` | Seconds to wait after the container starts before the first probe |
+| `periodSeconds` | How often the probe is performed |
+| `failureThreshold` | Number of consecutive failures before the pod is removed from endpoints (default: `3`) |

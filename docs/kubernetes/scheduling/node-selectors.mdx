@@ -1,0 +1,54 @@
+---
+title: Node Selectors
+description: Use node selectors to constrain pods to nodes with specific labels in Kubernetes.
+---
+
+Node selectors are used to **specify the nodes where a pod should be scheduled** by using **labels**.
+
+## When to use node selectors
+
+Assume you have a pod that requires a GPU, but only Node 1 has a GPU and Node 2 does not. You want to schedule the pod on Node 1. There are two ways to achieve this:
+
+<CardGroup cols={2}>
+  <Card title="Node Selectors" icon="tag">
+    Simple label-based node targeting. Works well for straightforward single-condition requirements.
+  </Card>
+  <Card title="Node Affinity" icon="sliders">
+    More expressive rules supporting complex conditions such as "large or medium GPU".
+  </Card>
+</CardGroup>
+
+## Steps to use node selectors
+
+<Steps>
+  <Step title="Label the node">
+    Apply a label to the target node using `kubectl label nodes`.
+
+    ```bash
+    kubectl label nodes <node-name> <label-key>=<label-value>
+    kubectl label nodes node1 gpu=large
+    ```
+  </Step>
+  <Step title="Add nodeSelector to the pod spec">
+    Reference the label in the pod definition under `nodeSelector`.
+
+    ```yaml title="sample-pod.yaml"
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: sample-pod
+    spec:
+      containers:
+        - name: sample-container
+          image: nginx
+      nodeSelector:
+        gpu: large
+    ```
+  </Step>
+</Steps>
+
+## Limitations
+
+<Warning>
+  Node selectors are **not flexible enough** for complex scenarios. For example, you cannot express "schedule on a node that has a large **or** medium GPU" using node selectors alone. Use [Node Affinity](/docs/kubernetes/scheduling/node-affinity) for those cases.
+</Warning>

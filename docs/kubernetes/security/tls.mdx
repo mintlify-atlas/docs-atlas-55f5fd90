@@ -1,0 +1,271 @@
+---
+title: TLS
+description: How TLS certificates work, how they secure Kubernetes component communication, and how to create and inspect certificates manually.
+---
+
+## TLS basics
+
+<Info>
+TLS uses a public/private key pair: the **public key** encrypts data, the **private key** decrypts it.
+</Info>
+
+**Transport Layer Security (TLS)**, also known as SSL, secures internet connections by encrypting data sent between a browser (or client) and a server.
+
+### Generating keys and certificates
+
+```bash
+# Generate a private key
+openssl genrsa -out sample.key 1024
+
+# Generate a public key from the private key
+openssl rsa -in sample.key -pubout > sample.pem
+```
+
+Self-signed certificates are not trusted by browsers. To get a trusted certificate, generate a **Certificate Signing Request (CSR)** and submit it to a **Certificate Authority (CA)** (e.g., GlobalSign, DigiCert, GoDaddy).
+
+```bash
+openssl req -new \
+  -key sample.key \
+  -out sample.csr \
+  -subj "/C=US/ST=California/L=San Francisco/O=Example/OU=IT Department/CN=domain.com"
+```
+
+The CA signs the CSR using its own private key. Browsers trust the signed certificate because the CA's public key is pre-installed in the browser.
+
+| Public key files | Private key files |
+| --- | --- |
+| `*.crt`, `*.pem` | `*.key`, `*-key.pem` |
+
+**Glossary:**
+
+| Term | Meaning |
+| --- | --- |
+| CA | Certificate Authority |
+| CSR | Certificate Signing Request |
+| CRT | Certificate |
+| PEM | Privacy Enhanced Mail — a Base64-encoded format that can hold certificates, private keys, certificate chains, and public keys |
+| KEY | Private key |
+
+## TLS in Kubernetes
+
+All communication between Kubernetes components must be **encrypted and secure**. Kubernetes uses **server certificates** to secure inter-component communication and **client certificates** to authenticate users and applications.
+
+All certificates must be signed by a **Certificate Authority**. Kubernetes requires at least one CA, but you can configure multiple.
+
+### Server certificates
+
+Components acting as servers need server certificates:
+
+| Component | Example certificate files |
+| --- | --- |
+| kube-apiserver | `kube-apiserver.crt`, `kube-apiserver.key` |
+| etcd | `etcd.crt`, `etcd.key` |
+| kubelet | `kubelet.crt`, `kubelet.key` |
+
+### Client certificates
+
+Components and users accessing the kube-apiserver need client certificates:
+
+| Client | Example certificate files |
+| --- | --- |
+| kube-scheduler | `kube-scheduler.crt`, `kube-scheduler.key` |
+| kube-controller-manager | `kube-controller-manager.crt`, `kube-controller-manager.key` |
+| kube-proxy | `kube-proxy.crt`, `kube-proxy.key` |
+| Admin (kubectl) | `admin.crt`, `admin.key` |
+| kube-apiserver (as client to etcd/kubelet) | reuse `kube-apiserver.crt` or create new |
+
+## Manually creating certificates
+
+<Steps>
+
+<Step title="Generate the CA certificate">
+
+```bash
+# Generate a CA private key
+openssl genrsa -out ca.key 2038
+
+# Generate a CSR for the CA
+openssl req -new -key ca.key -subj "/CN=Kubernetes-CA" -out ca.csr
+
+# Self-sign the CA certificate
+openssl x509 -req -in ca.csr -signkey ca.key -out ca.crt
+```
+
+The CA now has its own private key (`ca.key`) and root certificate (`ca.crt`).
+
+</Step>
+
+<Step title="Generate client certificates">
+
+The following example creates a certificate for the **admin user**. Repeat for other clients that need access to the kube-apiserver.
+
+```bash
+# Generate a private key
+openssl genrsa -out admin.key 2038
+
+# Generate a CSR
+openssl req -new -key admin.key -subj "/CN=Kubernetes-admin" -out admin.csr
+
+# Sign the certificate using the CA
+openssl x509 -req -in admin.csr -CA ca.crt -CAkey ca.key -out admin.crt
+```
+
+To differentiate between the admin user and regular users (e.g., `john`), specify the group in the CSR subject:
+
+```bash
+openssl req -new -key admin.key \
+  -subj "/CN=Kubernetes-admin/O=system:masters" -out admin.csr
+```
+
+<Note>
+`system:masters` is a predefined Kubernetes group with admin privileges.
+</Note>
+
+<Info>
+**kubelet client certificates** use the naming format `system:node:<node-name>` and the group `system:nodes`. This allows the kube-apiserver to identify which node is authenticating and apply the correct node authorizer permissions. After generating kubelet certificates, configure them in kubeconfig files.
+</Info>
+
+<Tip>
+Test a certificate connection with curl:
+
+```bash
+curl https://kube-apiserver:6443/api/v1/pods \
+  --key admin.key --cert admin.crt --cacert ca.crt
+```
+
+Or move all configuration into a kubeconfig file for easier management:
+
+```yaml title="kube-config.yaml"
+apiVersion: v1
+kind: Config
+clusters:
+  - cluster:
+      certificate-authority: ca.crt
+      server: https://kube-apiserver:6443
+    name: kubernetes
+users:
+  - name: admin
+    user:
+      client-certificate: admin.crt
+      client-key: admin.key
+```
+
+All clients and servers must have the **CA root certificate** to trust issued certificates. Distribute `ca.crt` to all Kubernetes components.
+</Tip>
+
+</Step>
+
+<Step title="Generate server certificates">
+
+Server components (kube-apiserver, etcd, kubelet) may be deployed in high-availability configurations and need **peer certificates** for inter-instance communication.
+
+**etcd** — configure server, peer, and CA certificates:
+
+```yaml title="etcd.yaml"
+- etcd
+  - --cert-file=/etc/kubernetes/pki/etcd/server.crt
+  - --client-cert-auth=true
+  - --key-file=/etc/kubernetes/pki/etcd/server.key
+  - --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt
+  - --peer-client-cert-auth=true
+  - --peer-key-file=/etc/kubernetes/pki/etcd/peer.key
+  - --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt
+  - --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt
+```
+
+**kube-apiserver** — because many names and aliases are used to reach it, all must be embedded in the certificate as Subject Alternative Names (SANs):
+
+- `kubernetes`
+- `kubernetes.default`
+- `kubernetes.default.svc`
+- `kubernetes.default.svc.cluster.local`
+- IP addresses (e.g., `10.89.0.2`)
+
+Create an OpenSSL config file with SANs:
+
+```text title="openssl.cnf"
+[req]
+req_extensions = v3_req
+distinguished_name = req_distinguished_name
+
+[ v3_req ]
+basicContrainsts = CA:FALSE
+keyUsage = nonRepudiation,
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = kubernetes
+DNS.2 = kubernetes.default
+DNS.3 = kubernetes.default.svc
+DNS.4 = kubernetes.default.svc.cluster.local
+IP.1 = 10.89.0.2
+```
+
+```bash
+# Generate a CSR with the SAN config
+openssl req -new -key kubeapiserver.key \
+  -subj "/CN=kube-apiserver" -out kubeapiserver.csr \
+  -config openssl.cnf
+
+# Sign the certificate
+openssl x509 -req -in kubeapiserver.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
+  -out kubeapiserver.crt -extensions v3_req -extfile openssl.cnf -days 1000
+```
+
+Reference kube-apiserver certificate flags:
+
+```yaml title="kube-apiserver.yaml"
+- kube-apiserver
+  - --client-ca-file=/etc/kubernetes/pki/ca.crt
+  - --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt
+  - --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt
+  - --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key
+  - --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt
+  - --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key
+  - --tls-cert-file=/etc/kubernetes/pki/apiserver.crt
+  - --tls-private-key-file=/etc/kubernetes/pki/apiserver.key
+  - --service-account-key-file=/etc/kubernetes/pki/sa.pub
+  - --service-account-signing-key-file=/etc/kubernetes/pki/sa.key
+```
+
+**kubelet** — generate a certificate per worker node, named after the node. Configure them in the kubelet config file:
+
+```yaml title="kubelet-config.yaml"
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+authentication:
+  x509:
+    clientCAFile: "/etc/kubernetes/pki/ca.pem"
+authorization:
+  mode: Webhook
+clusterDomain: "cluster.local"
+clusterDNS:
+  - "10.32.0.10"
+tlsCertFile: "/etc/kubernetes/kubelet/node-1.crt"
+tlsPrivateKeyFile: "/etc/kubernetes/kubelet/node-1-key.key"
+```
+
+</Step>
+
+</Steps>
+
+## Inspecting certificate details
+
+When Kubernetes components are deployed as pods (the most common approach), inspect certificates directly from the pod manifest.
+
+```bash
+openssl x509 -in /etc/kubernetes/pki/apiserver.crt -text -noout
+```
+
+Key fields to check in the output:
+
+| Field | Meaning |
+| --- | --- |
+| `Issuer: CN = kubernetes` | The CA that signed the certificate |
+| `Not After` | The certificate expiry date |
+| `Subject: CN = kube-apiserver` | The common name of the certificate |
+| `X509v3 Subject Alternative Name` | All valid aliases and IPs for this certificate |
+
+<Tip>
+If `kubectl` is not working due to certificate issues, use `kubectl logs` to check pod logs. If that is also unavailable, use `docker logs` or `crictl logs` to inspect the container runtime logs directly.
+</Tip>

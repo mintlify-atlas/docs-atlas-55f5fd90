@@ -1,0 +1,102 @@
+---
+title: Liveness Probes
+description: Configure liveness probes to automatically restart unhealthy containers in Kubernetes using HTTP, TCP, and exec checks.
+---
+
+<Info>
+  All probe fields are the same as readiness probes. The only difference is using the `livenessProbe` field instead of `readinessProbe`.
+</Info>
+
+## What are liveness probes?
+
+Liveness probes **determine whether a container is alive**. If the probe fails, kubelet **restarts the container**. This is useful when a container is running but the application inside is no longer responding — for example, an API server that is stuck but whose process has not exited.
+
+A successful probe means the container is healthy. A failed probe triggers a container restart.
+
+**Probe types:**
+
+<CardGroup cols={3}>
+  <Card title="HTTP" icon="globe">
+    Sends an HTTP GET request to the container. A 2xx or 3xx response is healthy.
+  </Card>
+  <Card title="TCP" icon="network-wired">
+    Opens a TCP socket to the container. A successful connection is healthy.
+  </Card>
+  <Card title="exec" icon="terminal">
+    Runs a command inside the container. An exit code of `0` is healthy.
+  </Card>
+</CardGroup>
+
+## Usage
+
+<Tabs>
+  <Tab title="HTTP">
+    ```yaml liveness-probes.yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: sample-pod
+    spec:
+      containers:
+        - name: web-app
+          image: webapp
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 5 # wait before performing the 1st probe
+            periodSeconds: 3       # how often to perform the probe
+            failureThreshold: 5    # restart after this many consecutive failures (default 3)
+    ```
+  </Tab>
+  <Tab title="TCP">
+    ```yaml liveness-probes.yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: sample-pod
+    spec:
+      containers:
+        - name: web-app
+          image: webapp
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            failureThreshold: 5
+    ```
+
+    kubelet attempts to open a socket to the container on port `8080`. A successful connection means the container is healthy.
+  </Tab>
+  <Tab title="exec">
+    ```yaml liveness-probes.yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: sample-pod
+    spec:
+      containers:
+        - name: web-app
+          image: webapp
+          livenessProbe:
+            exec:
+              command:
+                - cat
+                - /app/healthy
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            failureThreshold: 5
+    ```
+
+    The command returns exit code `0` on success. Any other exit code is treated as a failure.
+  </Tab>
+</Tabs>
+
+## Key probe fields
+
+| Field | Description |
+|---|---|
+| `initialDelaySeconds` | Seconds to wait after the container starts before the first probe |
+| `periodSeconds` | How often the probe is performed |
+| `failureThreshold` | Number of consecutive failures before the container is restarted (default: `3`) |

@@ -1,0 +1,72 @@
+---
+title: Node Affinity
+description: Use node affinity rules to control which nodes your pods are eligible to be scheduled on in Kubernetes.
+---
+
+<Info>
+  You can **combine taints and tolerations with node affinity** to schedule pods on specific nodes. Apply taints and tolerations to your nodes first to prevent other pods from being scheduled on them, then use node affinity to prevent your pods from being scheduled on other nodes.
+</Info>
+
+## Concept and usage
+
+Node affinity allows you to specify rules for placing pods on specific nodes. For example, you can schedule a pod only on nodes that have a large or medium GPU.
+
+```yaml title="sample-pod.yaml"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sample-pod
+spec:
+  containers:
+    - name: sample-container
+      image: nginx
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: gpu
+              operator: In # Other operators: NotIn, Exists
+              values:
+                - large
+                - medium
+```
+
+<Note>
+  The `Exists` operator checks whether a label key exists on the node. When using `Exists`, you do not need to specify the `values` field — it does not compare values.
+</Note>
+
+## Node affinity types
+
+Node affinity types are composed of two phases: **DuringScheduling** and **DuringExecution**.
+
+<Accordion title="DuringScheduling">
+  Applies when the pod does not yet exist on the node — the rules must be met for the pod to be scheduled.
+
+  - `requiredDuringScheduling` — The pod **must** be scheduled on a node that satisfies the rule.
+  - `preferredDuringScheduling` — The pod is scheduled on a satisfying node if possible. If no such node exists, the pod is scheduled elsewhere.
+</Accordion>
+
+<Accordion title="DuringExecution">
+  Applies when the pod is already running on the node. Determines what happens if node labels change after scheduling.
+
+  - `RequiredDuringExecution` — The pod is **evicted** if the node label changes and the rule is no longer satisfied.
+  - `IgnoredDuringExecution` — The pod **continues to run** even if the node label changes.
+</Accordion>
+
+### Available affinity types
+
+<AccordionGroup>
+  <Accordion title="requiredDuringSchedulingIgnoredDuringExecution">
+    The pod must be scheduled on a node that satisfies the rule. If no node satisfies the rule, the pod is not scheduled. If node labels change after scheduling, the pod continues to run.
+  </Accordion>
+  <Accordion title="preferredDuringSchedulingIgnoredDuringExecution">
+    The pod is scheduled on a satisfying node if possible. If no node satisfies the rule, the pod is scheduled on another node. If node labels change after scheduling, the pod continues to run.
+  </Accordion>
+  <Accordion title="requiredDuringSchedulingRequiredDuringExecution">
+    The pod must be scheduled on a node that satisfies the rule. If node labels change after scheduling, the pod is evicted.
+  </Accordion>
+  <Accordion title="preferredDuringSchedulingRequiredDuringExecution">
+    The pod is scheduled on a satisfying node if possible. If no node satisfies the rule, the pod is scheduled on another node. If node labels change after scheduling, the pod is evicted.
+  </Accordion>
+</AccordionGroup>

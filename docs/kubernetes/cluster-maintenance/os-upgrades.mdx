@@ -1,0 +1,57 @@
+---
+title: OS Upgrades
+description: Learn how to safely upgrade node operating systems in a Kubernetes cluster using drain, cordon, and uncordon commands.
+---
+
+<Note>
+**Quick reference**
+- `drain` = terminate pods + reschedule on other nodes + cordon the node
+- `cordon` = mark node as unschedulable only
+</Note>
+
+## Introduction
+
+Assume you have a cluster with 2 nodes and you want to upgrade one of the nodes to a new version. If the node is down for **more than 5 minutes**, all pods running on that node will be terminated. If the node comes back within that window, pods will come back online when the `kubelet` process starts. Pods that are part of a ReplicaSet will be provisioned on other nodes automatically.
+
+To upgrade a node safely, you must drain it first.
+
+## Draining a node
+
+When you **drain a node**, pods are gracefully terminated and rescheduled on other nodes. The node is also marked as **unschedulable** (cordoned), so no new pods are scheduled on it until you uncordon it.
+
+<Warning>
+Draining a node does not move pods — it terminates them and lets the scheduler place new ones elsewhere. Pods not managed by a controller (e.g., bare pods) will be lost unless you use `--force`.
+</Warning>
+
+```bash
+# Drain a node (gracefully evicts pods managed by a controller)
+kubectl drain <node-name>
+
+# Force drain — bare pods will be lost permanently
+kubectl drain <node-name> --force
+
+# Ignore DaemonSet-managed pods during drain
+kubectl drain <node-name> --ignore-daemonsets
+```
+
+## Uncordoning a node
+
+After the node comes back online, uncordon it so that new pods can be scheduled on it again.
+
+```bash
+kubectl uncordon <node-name>
+```
+
+<Note>
+Pods that were rescheduled to other nodes during the drain will **not** automatically move back to the original node after uncordoning. They remain on whichever nodes the scheduler placed them.
+</Note>
+
+## Cordoning a node without draining
+
+If you only want to prevent new pods from being scheduled on a node without evicting existing ones, use `cordon`.
+
+```bash
+kubectl cordon <node-name>
+```
+
+This marks the node as unschedulable without terminating any running pods.

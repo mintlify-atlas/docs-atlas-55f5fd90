@@ -1,0 +1,95 @@
+---
+title: 4C Cloud Native K8s Security
+description: An overview of the 4C security model for cloud-native Kubernetes—Cloud, Cluster, Container, and Code—and the practices that secure each layer.
+---
+
+## Overview of the 4C's
+
+The 4C's of cloud-native Kubernetes security are four concentric layers. Each inner layer depends on the security of the layers surrounding it.
+
+<CardGroup cols={2}>
+  <Card title="Cloud" icon="cloud">
+    Security of the **cloud infrastructure** hosting the Kubernetes clusters — public or private cloud, data centers, and network firewalls that prevent unauthorized remote access.
+  </Card>
+  <Card title="Cluster" icon="server">
+    Security of the **Kubernetes cluster** through authentication, authorization, admission controls, and network policies — including the Docker daemon.
+  </Card>
+  <Card title="Container" icon="box">
+    Security of **containers**: restricting untrusted images, securing the supply chain, using sandboxed containers for isolation, and avoiding privileged containers.
+  </Card>
+  <Card title="Code" icon="code">
+    Security of the **application code** running inside containers. Developers must follow code security best practices to prevent vulnerabilities.
+  </Card>
+</CardGroup>
+
+## Cloud provider security
+
+The cloud provider is responsible for the security of the physical infrastructure (hardware, software, networking, and facilities), while the customer is responsible for managing network and firewall settings, data, applications, identity and access management, and operating systems. This is known as the **Shared Responsibility Model**.
+
+To secure the cloud layer:
+- **Activate the network firewall** — permit or deny traffic based on source/destination IP, port, and protocol to prevent unauthorized access.
+- Follow the **Shared Responsibility Model** — understand the division of responsibilities between provider and customer.
+- Use **Cloud Provider Security Capabilities** across three categories:
+
+<AccordionGroup>
+  <Accordion title="Threat detection tools">
+
+| Provider | Tool | Description |
+| --- | --- | --- |
+| AWS | GuardDuty | Uses machine learning to detect threats |
+| GCP | Security Command Center | Centralized dashboard to monitor threats and security health |
+| Azure | Microsoft Sentinel | Combines SIEM and SOAR for automated threat detection and response |
+
+  </Accordion>
+  <Accordion title="Application firewall tools">
+
+| Provider | Tool | Description |
+| --- | --- | --- |
+| AWS | AWS WAF | Protects web applications from SQL injection, XSS, and other exploits |
+| GCP | Cloud Armor | DDoS protection and common attack mitigation |
+| Azure | Azure WAF | Protects web applications from SQL injection, XSS, and other exploits |
+
+  </Accordion>
+  <Accordion title="Container security tools">
+
+| Provider | Tool |
+| --- | --- |
+| AWS | EKS, Bottlerocket, kube-bench (CIS benchmarks) |
+| GCP | GKE, Anthos, Open Policy Agent (OPA) |
+| Azure | AKS |
+
+  </Accordion>
+</AccordionGroup>
+
+## Cluster security
+
+Server hardening is the process of enhancing server security through a series of steps.
+
+- **Isolate applications** on separate servers or networks to reduce the risk of cross-contamination.
+- **Use firewall rules and policies** to restrict Docker port access.
+- **Apply least privilege to containers** and secure the Kubernetes dashboard using RBAC to eliminate vulnerabilities.
+- **Store sensitive data** in Kubernetes Secrets.
+- **Encrypt ETCD data** at rest and use **TLS** for secure communication between Kubernetes components. Set RBAC and perform regular backups.
+
+<Warning>
+If two applications share the same IP address (hosted on the same server), a compromise of one puts the other at risk. This is a lack of network segmentation. Isolate applications on separate networks, remove public IP addresses from the `kube-apiserver` where possible, and implement strict access controls like VPN.
+</Warning>
+
+<Warning>
+Docker port **2375** is unauthenticated by default — anyone can access the Docker daemon without authentication. Implement network firewall rules to restrict Docker port access to only trusted and authenticated users.
+</Warning>
+
+## Kubernetes isolation techniques
+
+- **Namespaces** — Isolate resources for multiple teams or environments (multitenancy). Different teams and projects can use the same cluster without interfering with each other.
+- **Network Policies** — Control traffic flow between pods by allowing or denying traffic based on source and destination.
+- **RBAC (Role-Based Access Control)** — Control access to cluster resources by granting or denying access based on roles and permissions.
+- **Resource Quotas** — Limit the amount of resources a namespace can consume to prevent resource exhaustion or monopolization.
+- **Pod Security Policies** — Control pod security settings by enforcing security contexts such as running containers as non-root, disallowing privilege escalation, and restricting host namespace access.
+
+## Artifact repository and image security
+
+- Use an **Artifact Repository** (e.g., Artifactory, Nexus) to store container images securely.
+- **Scan container images** for vulnerabilities before deploying (e.g., Trivy, Clair).
+- Use **trusted or minimal base images** (e.g., Alpine Linux) to reduce the attack surface. Reputable sources perform regular updates and security scans.
+- Use **digital signatures** to verify container image authenticity and integrity.

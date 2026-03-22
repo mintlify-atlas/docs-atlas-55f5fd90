@@ -1,0 +1,246 @@
+---
+title: Authorization
+description: Overview of Kubernetes authorization modes including Node, ABAC, RBAC, and Webhook, with step-by-step configuration examples.
+---
+
+## Authorization modes
+
+| Mode | Description |
+| --- | --- |
+| AlwaysAllow | Allows all requests without any authorization checks |
+| AlwaysDeny | Blocks all requests |
+| Node Authorization | Authorizes API requests made by kubelets |
+| ABAC | Grants access based on policies combining user attributes |
+| RBAC | Regulates access based on roles assigned to users or service accounts |
+| Webhook | Delegates authorization to an external service (e.g., Open Policy Agent) |
+
+By default, `kube-apiserver` uses `AlwaysAllow`. You can change the mode with `--authorization-mode`. Multiple modes can be specified as a comma-separated list — the apiserver tries each mode in order and denies the request only if all modes deny it.
+
+```bash
+--authorization-mode=RBAC,ABAC,Webhook
+```
+
+## Node authorization
+
+<Info>
+The node authorizer only handles requests from kubelets.
+</Info>
+
+The node authorizer grants kubelets privileges to perform API operations. Kubelets are part of the `system:node` group and have names prefixed with `system:node`.
+
+**Read operations granted:**
+- services, endpoints, nodes, pods
+- secrets, configmaps, persistent volume claims, and persistent volumes related to pods on the kubelet's node
+
+**Write operations granted:**
+- node status, pod status, events
+
+## Attribute-based access control (ABAC)
+
+ABAC restricts access using a static policy file that defines rules based on user attributes. Note that **every policy change requires restarting the kube-apiserver**.
+
+<Steps>
+
+<Step title="Create a policy file">
+
+The following example policy file:
+- Allows **Alice** to create and get pods in the `default` namespace
+- Allows **Bob** to get pods in the `prod` namespace (read-only)
+- Allows the **dev** group to access all resources in all namespaces
+
+```json title="policy.jsonl"
+{"apiVersion": "abac.authorization.kubernetes.io/v1beta1", "kind": "Policy", "spec": { "user": "alice", "namespace": "default", "resource": "pods", "readonly": false}}
+{"apiVersion": "abac.authorization.kubernetes.io/v1beta1", "kind": "Policy", "spec": {"user": "bob", "namespace": "prod", "resource": "pods", "readonly": true}}
+{"apiVersion": "abac.authorization.kubernetes.io/v1beta1", "kind": "Policy", "spec": {"group": "dev", "namespace": "*", "resource": "*"}}
+```
+
+</Step>
+
+<Step title="Enable ABAC mode on the kube-apiserver">
+
+```bash title="/etc/kubernetes/manifests/kube-apiserver.yaml"
+--authorization-mode=ABAC
+--authorization-policy-file=policy.jsonl
+```
+
+<Warning>
+Mount the policy file as a volume so the kube-apiserver can access it. Every time you update the policy file, you must restart the kube-apiserver.
+</Warning>
+
+</Step>
+
+<Step title="Create a user and test permissions">
+
+```bash
+# Create a service account to act as the user
+kubectl create serviceaccount alice
+```
+
+Create a service account token:
+
+```yaml title="sa-token-secret.yaml"
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alice-token
+  annotations:
+    kubernetes.io/service-account.name: alice
+type: kubernetes.io/service-account-token
+```
+
+Retrieve and store the token:
+
+```bash
+kubectl get secret alice-token -o jsonpath='{.data.token}' | base64 --decode > token.txt
+```
+
+Set up user credentials and context:
+
+```bash
+export ALICE_TOKEN=$(cat token.txt)
+kubectl config set-credentials alice --token=$ALICE_TOKEN
+kubectl config set-context alice-context --user=alice --cluster=kubernetes --namespace=default
+```
+
+Verify permissions:
+
+```bash
+kubectl get pods -n default      # should succeed
+kubectl get secrets -n default   # should be denied
+```
+
+</Step>
+
+</Steps>
+
+## Role-based access control (RBAC)
+
+<Info>
+RBAC is primarily used to authorize users or service accounts for **namespace-scoped resources**.
+</Info>
+
+RBAC lets you define a Role with a set of permissions, then bind it to users, groups, or service accounts.
+
+Before creating roles, identify whether resources are namespace-scoped or cluster-scoped:
+
+```bash
+# List all namespace-scoped resources
+kubectl api-resources --namespaced=true
+
+# Include verbs in the output
+kubectl api-resources --namespaced=true --sort-by name -o wide
+```
+
+Roles and RoleBindings are themselves namespace-scoped. If no namespace is specified, they are created in the `default` namespace.
+
+<Steps>
+
+<Step title="Create a Role">
+
+```yaml title="role.yaml"
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer
+rules:
+  - apiGroups: [""]          # "" indicates the core API group
+    resources: ["pods"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["create", "delete"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+    resourceNames: ["secret-name", "my-secret"]  # optional: restrict to specific resource names
+```
+
+- `apiGroups` — the API group of the resource (see the API Version column from `kubectl api-resources`)
+- `resourceNames` — restricts the rule to specific named resources; omit to apply to all resources of that type
+
+```bash
+kubectl create role developer --verb=get,watch,list --resource=pods
+kubectl create role developer --verb=create,delete --resource=deployments.apps
+kubectl create role developer --verb=get --resource=secrets \
+  --resource-name=secret-name --resource-name=my-secret
+
+kubectl get roles
+```
+
+</Step>
+
+<Step title="Create a RoleBinding">
+
+Link the role to a user, group, or service account.
+
+```yaml title="rolebinding.yaml"
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-binding
+subjects:
+  - kind: User
+    name: user1
+    apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: backend-developers
+    apiGroup: rbac.authorization.k8s.io
+  - kind: ServiceAccount
+    name: my-service-account
+    namespace: default
+  - kind: Group
+    name: system:serviceaccounts:default   # all service accounts in the default namespace
+    apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: system:serviceaccounts          # all service accounts in any namespace
+    apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: system:authenticated            # all authenticated users
+    apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: system:unauthenticated          # all unauthenticated users
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role                              # Role or ClusterRole
+  name: developer
+```
+
+<Note>
+You can reference a **ClusterRole** in a RoleBinding to reuse a common set of permissions across multiple namespaces without duplicating role definitions.
+</Note>
+
+```bash
+kubectl create rolebinding developer-binding --role=developer --user=user1
+kubectl create rolebinding developer-binding --role=developer --group=backend-developers
+kubectl create rolebinding developer-binding --role=developer \
+  --serviceaccount=default:my-service-account
+
+kubectl get rolebinding
+```
+
+</Step>
+
+<Step title="Verify access (optional)">
+
+```bash
+kubectl auth can-i delete nodes
+kubectl auth can-i get pods --as developer
+
+# Check if a user can create deployments in the prod namespace
+kubectl auth can-i create deployments --as developer --namespace prod
+
+# Check if a group can delete nodes
+kubectl auth can-i delete nodes --as-group=developers
+
+# Check if a service account can get pods
+kubectl auth can-i get pods --as=system:serviceaccount:default:my-service-account
+
+# Check if a service account can create deployments in the prod namespace
+kubectl auth can-i create deployments \
+  --as=system:serviceaccount:default:my-service-account --namespace=prod
+```
+
+</Step>
+
+</Steps>

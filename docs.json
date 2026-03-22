@@ -84,7 +84,7 @@
               "docs/kubernetes/services",
               "docs/kubernetes/ingress",
               "docs/kubernetes/namespace",
-              "docs/kubernetes/labels-selectors-and-algorithms",
+              "docs/kubernetes/labels-selectors-and-annotations",
               "docs/kubernetes/env-and-secrets-setup",
               "docs/kubernetes/volume",
               "docs/kubernetes/persistent-volume-and-claim",
@@ -93,6 +93,49 @@
               "docs/kubernetes/cron-job",
               "docs/kubernetes/command-and-args",
               "docs/kubernetes/port-forward"
+            ]
+          },
+          {
+            "group": "Kubernetes Scheduling",
+            "pages": [
+              "docs/kubernetes/scheduling/manual-scheduling",
+              "docs/kubernetes/scheduling/node-selectors",
+              "docs/kubernetes/scheduling/node-affinity",
+              "docs/kubernetes/scheduling/taints-and-tolerations",
+              "docs/kubernetes/scheduling/static-pod",
+              "docs/kubernetes/scheduling/multiple-schedulers"
+            ]
+          },
+          {
+            "group": "Kubernetes Observability",
+            "pages": [
+              "docs/kubernetes/observability/liveness-probes",
+              "docs/kubernetes/observability/readiness-probes",
+              "docs/kubernetes/observability/monitoring",
+              "docs/kubernetes/observability/logging",
+              "docs/kubernetes/observability/audit-logging"
+            ]
+          },
+          {
+            "group": "Kubernetes Cluster Maintenance",
+            "pages": [
+              "docs/kubernetes/cluster-maintenance/os-upgrades",
+              "docs/kubernetes/cluster-maintenance/cluster-upgrade",
+              "docs/kubernetes/cluster-maintenance/backup-and-restore-methods"
+            ]
+          },
+          {
+            "group": "Kubernetes Security",
+            "pages": [
+              "docs/kubernetes/security/4c-cloud-native-k8s-security",
+              "docs/kubernetes/security/authentication",
+              "docs/kubernetes/security/authorization",
+              "docs/kubernetes/security/kubeconfig",
+              "docs/kubernetes/security/service-account",
+              "docs/kubernetes/security/tls",
+              "docs/kubernetes/security/cluster-components-security",
+              "docs/kubernetes/security/pod-security-standard-and-admissions",
+              "docs/kubernetes/security/pod-security-policy"
             ]
           },
           {

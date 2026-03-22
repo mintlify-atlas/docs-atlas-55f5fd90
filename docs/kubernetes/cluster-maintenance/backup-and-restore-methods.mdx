@@ -1,0 +1,154 @@
+---
+title: Backup and Restore Methods
+description: How to back up and restore Kubernetes resource configurations and etcd cluster data.
+---
+
+## Backup candidates
+
+<CardGroup cols={3}>
+  <Card title="Resource Configuration" icon="file-code">
+    All Kubernetes object definitions (pods, deployments, services, etc.)
+  </Card>
+  <Card title="ETCD Cluster" icon="database">
+    The cluster's state and configuration database
+  </Card>
+  <Card title="Persistent Volumes" icon="hard-drive">
+    Application data stored in persistent volumes
+  </Card>
+</CardGroup>
+
+## Resource configuration backup
+
+Query the `kube-apiserver` using `kubectl` to export all objects as YAML and store them as a backup copy.
+
+```bash
+# Export all resources across all namespaces
+kubectl get all --all-namespaces -o yaml > backup.yaml
+
+# Restore from the backup
+kubectl apply -f backup.yaml
+```
+
+<Tip>
+Tools like **Velero** and **Kasten** can automate Kubernetes resource backups and support scheduled snapshots and cross-cluster restores.
+</Tip>
+
+## ETCD backup
+
+ETCD is the database of the Kubernetes cluster, storing all cluster state — nodes, pods, secrets, and more.
+
+When configuring ETCD, a **data directory** is specified where all ETCD data is stored. You can back up this directory directly.
+
+```bash
+# View the ETCD pod configuration to find the data directory
+kubectl describe pod <etcd-pod> -n kube-system
+```
+
+```bash title="etcd.service"
+ExecStart=/usr/local/bin/etcd \\
+  ...
+  --data-dir=/var/lib/etcd
+```
+
+### Creating an ETCD snapshot
+
+<Info>
+Set `ETCDCTL_API=3` before running any `etcdctl` backup or restore commands.
+
+```bash
+export ETCDCTL_API=3
+etcdctl version
+```
+</Info>
+
+```bash
+ETCDCTL_API=3 etcdctl \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key \
+  snapshot save /var/lib/etcd/snapshot.db
+
+# View snapshot status
+ETCDCTL_API=3 etcdctl \
+  snapshot status /var/lib/etcd/snapshot.db
+```
+
+<Note>
+- You can specify any path to save the snapshot.
+- Always provide the `--cacert`, `--cert`, `--key`, and `--endpoints` flags when saving a snapshot.
+</Note>
+
+## ETCD restore
+
+<Steps>
+
+<Step title="Stop the kube-apiserver">
+
+The `kube-apiserver` depends on ETCD. Stop it before restoring so that ETCD can restart cleanly.
+
+```bash
+sudo service kube-apiserver stop
+```
+
+</Step>
+
+<Step title="Run the ETCD restore command">
+
+When restoring from a snapshot, ETCD initializes a new cluster configuration and treats all members as new, which prevents a restored member from accidentally joining an existing cluster.
+
+```bash
+ETCDCTL_API=3 etcdctl \
+  snapshot restore /var/lib/etcd/snapshot.db \
+  --data-dir /var/lib/etcd-new
+```
+
+</Step>
+
+<Step title="Update the ETCD configuration">
+
+Point the ETCD service at the new data directory. Use `ps aux | grep etcd` or `kubectl describe pod <control-plane-pod> -n kube-system` (not the etcd pod) to locate the configuration.
+
+<Tabs>
+  <Tab title="Systemd service">
+
+```bash title="etcd.service"
+ExecStart=/usr/local/bin/etcd \\
+  ...
+  --data-dir=/var/lib/etcd-new
+```
+
+After updating the configuration file, reload and restart the service:
+
+```bash
+sudo systemctl daemon-reload
+sudo service etcd restart
+```
+
+  </Tab>
+  <Tab title="Static pod (kubeadm)">
+
+If ETCD is deployed as a static pod, update the volume path in the manifest. The pod will restart automatically.
+
+```yaml title="/etc/kubernetes/manifests/etcd.yaml"
+volumes:
+- hostPath:
+    path: /var/lib/etcd-from-backup
+    type: DirectoryOrCreate
+  name: etcd-data
+```
+
+  </Tab>
+</Tabs>
+
+</Step>
+
+<Step title="Start the kube-apiserver">
+
+```bash
+sudo service kube-apiserver start
+```
+
+</Step>
+
+</Steps>

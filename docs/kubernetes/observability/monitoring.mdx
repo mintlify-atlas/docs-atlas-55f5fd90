@@ -1,0 +1,61 @@
+---
+title: Monitoring
+description: Understand what to monitor in a Kubernetes cluster and how to use Metrics Server to collect resource usage data for autoscaling.
+---
+
+## What to monitor
+
+<AccordionGroup>
+  <Accordion title="Cluster components">
+    | Component | What to monitor |
+    |---|---|
+    | API Server (`kube-apiserver`) | Request rates, error rates, and latency |
+    | Scheduler (`kube-scheduler`) | Scheduling latency and errors |
+    | Controller Manager (`kube-controller-manager`) | Status of various controllers |
+  </Accordion>
+
+  <Accordion title="Nodes">
+    - The number of nodes in the cluster
+    - **CPU and memory usage** — ensure nodes are not over or underutilized
+    - **Disk usage** — monitor disk space and I/O operations
+    - **Network** — monitor bandwidth and errors
+  </Accordion>
+
+  <Accordion title="Pods">
+    - The number of pods in the cluster
+    - **Resource usage** — CPU, memory, and disk usage per pod and container
+    - **Pod status** — Running, Pending, Failed, and other states
+    - **Container logs** — errors and warnings
+    - **Health checks** — results of liveness and readiness probes
+    - **Application metrics** — custom metrics such as request rates and error rates
+  </Accordion>
+</AccordionGroup>
+
+## Metrics Server
+
+<Info>
+  You can use other metrics solutions such as Prometheus, Datadog, or Dynatrace in place of Metrics Server.
+</Info>
+
+Metrics Server collects **resource metrics** (CPU and memory usage) from each node's **kubelet** and aggregates them. It then delivers the data to the **Kubernetes API server** (`kube-apiserver`) for autoscaling purposes.
+
+- **Horizontal Pod Autoscaler (HPA)** uses this data to automatically adjust the number of pod replicas in a deployment.
+
+### How metrics are collected
+
+Each kubelet contains a component called **cAdvisor** (Container Advisor) that collects resource usage data from running pods and exposes it through the kubelet API. Metrics Server reads from this API to gather cluster-wide resource data.
+
+### Commands
+
+```bash
+# View performance metrics of nodes
+# Requires Metrics Server to be correctly configured and running
+kubectl top node
+
+# View performance metrics of pods
+kubectl top pod
+```
+
+<Note>
+  The `kubectl top` commands require Metrics Server to be correctly configured and running in the cluster.
+</Note>

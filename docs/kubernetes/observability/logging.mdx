@@ -1,0 +1,39 @@
+---
+title: Logging
+description: Use kubectl logs to monitor and troubleshoot applications running in Kubernetes pods, including multi-container pods.
+---
+
+## Usage
+
+Logging lets you **monitor and troubleshoot applications** running in a Kubernetes cluster. A logging strategy is essential for monitoring application health and diagnosing issues when they arise.
+
+Given a pod with multiple containers:
+
+```yaml sample-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sample-pod
+spec:
+  containers:
+    - name: web-app
+      image: webapp
+    - name: db
+      image: webapp-db
+```
+
+You can stream and inspect logs using the following commands:
+
+```bash
+# Stream live logs from a pod (single container)
+kubectl logs -f <pod-name>
+kubectl logs -f sample-pod
+
+# Stream logs from a specific container in a multi-container pod
+kubectl logs -f <pod-name> -c <container-name>
+kubectl logs -f sample-pod -c webapp-db
+```
+
+<Tip>
+  Use the `-c` flag to specify a container name when a pod runs more than one container. Without it, `kubectl logs` will prompt you to specify a container.
+</Tip>

@@ -1,0 +1,82 @@
+---
+title: Taints and Tolerations
+description: Learn how taints on nodes and tolerations on pods control which pods can be scheduled onto which nodes in Kubernetes.
+---
+
+<Note>
+  **Taints** are set on **nodes**.  
+  **Tolerations** are set on **pods**.
+
+  Taints and tolerations do **not** tell the pod to go to a particular node. They **restrict nodes from accepting pods** that do not have the matching toleration.
+</Note>
+
+## Concept
+
+Taints and tolerations ensure that pods are scheduled onto the right nodes by setting restrictions on nodes so that they only accept pods with certain tolerations.
+
+For example, assume you have **Node 1** and **Node 2** and three pods: **Pod 1**, **Pod 2**, and **Pod 3**. If you set a taint `app=green` on Node 1, then Node 1 will only accept pods that have the toleration `app=green`. To schedule Pod 1 on Node 1, you must add the toleration `app=green` to Pod 1.
+
+Pod 2 and Pod 3 will **not** be scheduled on Node 1 because they lack the required toleration. Node 2 has no taints, so any pod can be scheduled there — including Pod 1, which is not required to run on Node 1 just because it has a toleration.
+
+## Steps
+
+<Steps>
+  <Step title="Taint the node">
+    Apply a taint to the node using `kubectl taint nodes`.
+
+    ```bash
+    kubectl taint nodes <node-name> <key>=<value>:<effect>
+    kubectl taint nodes node1 app=green:NoSchedule
+    ```
+
+    The **taint effect** defines what happens to pods that do not tolerate the taint:
+
+    | Effect | Behavior |
+    | --- | --- |
+    | `NoSchedule` | The pod will not be scheduled onto the node. |
+    | `PreferNoSchedule` | The scheduler tries to avoid placing an intolerant pod on the node, but it is not guaranteed. |
+    | `NoExecute` | Intolerant pods already running on the node are evicted. New intolerant pods will not be scheduled. |
+  </Step>
+
+  <Step title="Add tolerations to the pod">
+    Add a `tolerations` block to the pod spec.
+
+    ```yaml title="sample-pod.yaml"
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: sample-pod
+    spec:
+      containers:
+        - name: sample-container
+          image: nginx
+      tolerations:
+        - key: "app"
+          operator: "Equal"
+          value: "green"
+          effect: "NoSchedule"
+    ```
+
+    <Warning>
+      All toleration values must be enclosed in double quotes (`""`).
+    </Warning>
+  </Step>
+
+  <Step title="(Optional) Remove the taint">
+    Append a `-` to the taint effect to remove the taint from the node.
+
+    ```bash
+    kubectl taint nodes <node-name> <key>=<value>:<effect>-
+    kubectl taint nodes node1 app=green:NoSchedule-
+    ```
+  </Step>
+</Steps>
+
+## Why the master node is not used for scheduling
+
+The Kubernetes scheduler does not schedule pods on the master node by default because the master node has a taint applied automatically when the cluster is created. You can inspect node taints with:
+
+```bash
+# Check the taints on a node
+kubectl describe node <node-name> | grep Taint
+```
