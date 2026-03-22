@@ -1,0 +1,309 @@
+{
+  "projectType": "general",
+  "projectName": "Karchunt",
+  "projectDescription": "KarChunT's personal website and knowledge base — a curated hub of technical documentation, guides, and blog posts covering DevOps, cloud, infrastructure, and software engineering topics.",
+  "theme": "willow",
+  "primaryColor": "#70382c",
+  "lightColor": "#debdb3",
+  "darkColor": "#624c5a",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Introduction",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction"]
+          }
+        ]
+      },
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["docs/index"]
+          },
+          {
+            "group": "Docker",
+            "pages": [
+              "docs/docker/what-is-docker",
+              "docs/docker/docker-architecture",
+              "docs/docker/docker-installation",
+              "docs/docker/image",
+              "docs/docker/container",
+              "docs/docker/volume",
+              "docs/docker/network",
+              "docs/docker/docker-compose",
+              "docs/docker/daemon-configuration",
+              "docs/docker/resource-limits",
+              "docs/docker/best-practices-for-creating-docker-image",
+              "docs/docker/useful-commands",
+              "docs/docker/future"
+            ]
+          },
+          {
+            "group": "Git",
+            "pages": [
+              "docs/git/what-is-git",
+              "docs/git/git-installation",
+              "docs/git/setup-repository",
+              "docs/git/branches",
+              "docs/git/save-changes",
+              "docs/git/stashing",
+              "docs/git/remote-repositories",
+              "docs/git/reset-and-revert",
+              "docs/git/rebasing",
+              "docs/git/reflog",
+              "docs/git/git-in-depth"
+            ]
+          },
+          {
+            "group": "Kubernetes",
+            "pages": [
+              "docs/kubernetes/what-is-kubernetes",
+              "docs/kubernetes/cluster-architecture",
+              "docs/kubernetes/container-runtime",
+              "docs/kubernetes/pod",
+              "docs/kubernetes/replica-set",
+              "docs/kubernetes/deployment",
+              "docs/kubernetes/daemon-set",
+              "docs/kubernetes/services",
+              "docs/kubernetes/ingress",
+              "docs/kubernetes/namespace",
+              "docs/kubernetes/labels-selectors-and-annotations",
+              "docs/kubernetes/env-and-secrets-setup",
+              "docs/kubernetes/volume",
+              "docs/kubernetes/persistent-volume-and-claim",
+              "docs/kubernetes/resource-requirements-and-limits",
+              "docs/kubernetes/job",
+              "docs/kubernetes/cron-job",
+              "docs/kubernetes/command-and-args",
+              "docs/kubernetes/port-forward"
+            ]
+          },
+          {
+            "group": "Linux",
+            "pages": [
+              "docs/linux/what-is-linux",
+              "docs/linux/linux-shell",
+              "docs/linux/bash-shell",
+              "docs/linux/basic-commands",
+              "docs/linux/help-command",
+              "docs/linux/env-variables"
+            ]
+          },
+          {
+            "group": "SSH",
+            "pages": [
+              "docs/ssh/ssh-overview",
+              "docs/ssh/installation",
+              "docs/ssh/play-with-ssh-keys",
+              "docs/ssh/remote-server-connection",
+              "docs/ssh/host-configuration",
+              "docs/ssh/server-configuration",
+              "docs/ssh/local-tunneling",
+              "docs/ssh/remote-tunneling"
+            ]
+          },
+          {
+            "group": "Ansible",
+            "pages": [
+              "docs/ansible/what-is-ansible",
+              "docs/ansible/ansible-architecture"
+            ]
+          },
+          {
+            "group": "Taskfile",
+            "pages": [
+              "docs/taskfile/what-is-taskfile",
+              "docs/taskfile/installation",
+              "docs/taskfile/basic",
+              "docs/taskfile/running-taskfile",
+              "docs/taskfile/variables",
+              "docs/taskfile/environment-variable",
+              "docs/taskfile/task-dependencies-and-parallel-task-execution",
+              "docs/taskfile/run-task-in-specific-order",
+              "docs/taskfile/looping",
+              "docs/taskfile/if-else-condition",
+              "docs/taskfile/task-aliases",
+              "docs/taskfile/internal-tasks",
+              "docs/taskfile/silent-mode",
+              "docs/taskfile/dry-run-mode",
+              "docs/taskfile/watch-tasks",
+              "docs/taskfile/forward-cli-arguments-to-cmd",
+              "docs/taskfile/wildcard-args",
+              "docs/taskfile/include-other-taskfile",
+              "docs/taskfile/platform-specific-tasks",
+              "docs/taskfile/task-directory",
+              "docs/taskfile/display-taskfile-summary",
+              "docs/taskfile/overriding-task-name",
+              "docs/taskfile/prevent-unnecessary-task-execution",
+              "docs/taskfile/ignore-errors",
+              "docs/taskfile/task-cleanup-with-defer",
+              "docs/taskfile/warning-prompts",
+              "docs/taskfile/interactive-cli-application",
+              "docs/taskfile/integrate-taskfile-with-cicd"
+            ]
+          },
+          {
+            "group": "Python OOP",
+            "pages": [
+              "docs/python-oop/concepts-of-oop",
+              "docs/python-oop/class-and-object",
+              "docs/python-oop/encapsulation",
+              "docs/python-oop/inheritance",
+              "docs/python-oop/polymorphism",
+              "docs/python-oop/abstraction",
+              "docs/python-oop/cohesion-and-coupling",
+              "docs/python-oop/uml-class-diagram"
+            ]
+          },
+          {
+            "group": "Data Structures & Algorithms",
+            "pages": [
+              "docs/data-structures-and-algorithms/what-is-data-structures-and-algorithms",
+              "docs/data-structures-and-algorithms/ram",
+              "docs/data-structures-and-algorithms/static-array",
+              "docs/data-structures-and-algorithms/dynamic-array",
+              "docs/data-structures-and-algorithms/stack"
+            ]
+          },
+          {
+            "group": "12-Factor App",
+            "pages": [
+              "docs/12-factor-app"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Blog",
+        "groups": [
+          {
+            "group": "DevOps & Infrastructure",
+            "pages": [
+              "blog/install-docker-engine-on-wsl",
+              "blog/check-docker-apt-repo",
+              "blog/fix-docker-compose-error-max-virtual-memory-areas-vm-max-map-count-65530-is-too-low-increase-to-at-least-262144",
+              "blog/got-permission-denied-while-trying-to-connect-to-the-docker-daemon-socket-at-unixvarrun-dockersock",
+              "blog/self-hosted-docker-registry",
+              "blog/setup-docker-proxy",
+              "blog/setup-k3s-on-ubuntu",
+              "blog/install-kubevirt",
+              "blog/setup-kubeconfig-file-in-github-action-secrets",
+              "blog/setup-self-hosted-github-runner",
+              "blog/install-nektos-act-on-ubuntu"
+            ]
+          },
+          {
+            "group": "Linux & Ubuntu",
+            "pages": [
+              "blog/my-ubuntu-setup",
+              "blog/mastering-wsl",
+              "blog/clear-linux-history",
+              "blog/fun-linux-utilities",
+              "blog/run-sudo-command-without-a-password",
+              "blog/install-chinese-characters-on-ubuntu",
+              "blog/install-chrome-using-deb-file",
+              "blog/install-packages-using-deb-file",
+              "blog/edit-hostname-on-ubuntu",
+              "blog/add-apt-repository-unable-to-support-jammy",
+              "blog/check-which-apt-repo-is-being-used",
+              "blog/check-ubuntu-static-ip-configuration",
+              "blog/setup-ubuntu-static-ip",
+              "blog/setup-rdp-on-ubuntu",
+              "blog/share-your-local-server-with-ngrok"
+            ]
+          },
+          {
+            "group": "Python",
+            "pages": [
+              "blog/install-python-on-ubuntu",
+              "blog/setup-default-python-version-on-ubuntu",
+              "blog/use-different-python-version-to-setup-python-virtual-environment",
+              "blog/error-when-creating-venv",
+              "blog/get-python-project-libraries-using-pipreqs",
+              "blog/python-uv",
+              "blog/no-module-named-apt_pkg",
+              "blog/pip-issue-no-module-apt-pkg",
+              "blog/pip-issue-no-module-ensurepip",
+              "blog/fix-pykerberos-install-fail",
+              "blog/install-krb5-config-and-kinit",
+              "blog/youtube-video-downloader-using-python"
+            ]
+          },
+          {
+            "group": "Git",
+            "pages": [
+              "blog/install-latest-git",
+              "blog/prevent-every-time-push-need-password-to-git-on-ubuntu",
+              "blog/fix-git-lfs-pointers-issue"
+            ]
+          },
+          {
+            "group": "Node.js & JavaScript",
+            "pages": [
+              "blog/setup-node-js",
+              "blog/fix-npm-no-write-permissions-to-global-system-directory",
+              "blog/fix-powershell-npm-execution-policy",
+              "blog/property-context-does-not-exist-on-type-require",
+              "blog/sync-vs-async"
+            ]
+          },
+          {
+            "group": "Java",
+            "pages": [
+              "blog/install-java-openjdk-17",
+              "blog/install-java-with-apt-on-ubuntu",
+              "blog/install-maven-mvn"
+            ]
+          },
+          {
+            "group": "SSH & Networking",
+            "pages": [
+              "blog/setup-ssh-on-ubuntu",
+              "blog/nginx-problems"
+            ]
+          },
+          {
+            "group": "Tools & Utilities",
+            "pages": [
+              "blog/sphinx-doc-generator",
+              "blog/convert-sphinx-to-pdf",
+              "blog/manim-installation-troubleshooting",
+              "blog/generative-art",
+              "blog/learn-json-schema",
+              "blog/install-jenkins-with-docker-compose",
+              "blog/multipass-windows",
+              "blog/windows-multipass-service-stuck",
+              "blog/stop-service-in-windows",
+              "blog/unable-to-open-x-display-when-trying-to-run-google-chrome",
+              "blog/qt-qpa-plugin-could-not-load-qt"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Comprehensive technical documentation on Docker, Git, Kubernetes, Linux, SSH, Ansible, Taskfile, Python OOP, and Data Structures & Algorithms",
+    "60+ short-form blog posts covering practical DevOps, Linux, Python, and infrastructure tips and fixes",
+    "Personal portfolio showcasing work experiences, certificates, and the Kubestronaut journey",
+    "Interactive utility tools (Color Picker, Jackson Pollock generative art)",
+    "Built with Next.js 16, Fumadocs, Tailwind CSS, and MDX for rich content rendering",
+    "Full-text search powered by Orama, math rendering via KaTeX, and diagram support with Mermaid"
+  ],
+  "publicApiSurface": [
+    "/docs — Technical documentation hub",
+    "/blog — Short technical tips and guides",
+    "/about — Personal profile page",
+    "/work-experiences — Career history",
+    "/certificate-journey — Certification timeline",
+    "/kubestronaut — Kubestronaut achievement page",
+    "/color-picker — Utility tool",
+    "/jackson-pollock — Generative art tool",
+    "/good-tools-and-websites — Curated developer resources",
+    "/gallery — Photo gallery"
+  ]
+}
