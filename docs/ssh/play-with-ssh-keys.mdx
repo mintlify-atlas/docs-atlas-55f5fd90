@@ -1,0 +1,111 @@
+---
+title: Play with SSH Keys
+description: Generate SSH key pairs, copy public keys to a server, use SSH agent, and forward credentials for passwordless authentication.
+---
+
+## Generating an SSH Key Pair
+
+Your first step should be creating a **new SSH key pair** on your local computer. Once set up, you can connect to a remote server **without a password**.
+
+```bash
+# Accept all defaults by pressing ENTER
+ssh-keygen
+
+# Specify algorithm, comment, and key size
+ssh-keygen -t dsa -C "Comment" -b 4096
+
+# Manage an existing private key
+ssh-keygen -p  # Remove or change the passphrase on a private key
+ssh-keygen -l  # Display the SSH key fingerprint
+```
+
+<Note>
+  By default, `ssh-keygen` generates an `id_rsa` (private key) and `id_rsa.pub` (public key) in the `~/.ssh/` directory.
+</Note>
+
+The **passphrase** on a private key adds an extra layer of security. Even if someone obtains your private key, they cannot access the remote server without the passphrase. Use [SSH agent](#using-an-ssh-agent-to-avoid-typing-your-private-key-passphrase) to avoid entering the passphrase on every connection.
+
+### Key Files
+
+| File | Purpose |
+| --- | --- |
+| `id_rsa` | Private key — keep this secret |
+| `id_rsa.pub` | Public key — safe to share |
+
+### Optional Parameters
+
+| Parameter | Description | Example |
+| --- | --- | --- |
+| `-t` | Type of cryptographic algorithm. Default is RSA. | `rsa`, `dsa`, `ecdsa`, `ed25519` |
+| `-C` | Comment to identify the key | `simple comment` |
+| `-b` | Number of bits. Default is 2048. | `4096` |
+| `-p` | Remove or change passphrase on an existing private key | Your password, or leave empty |
+| `-l` | Display the SSH key fingerprint | — |
+
+## Copy the Public SSH Key to the Server
+
+To enable **passwordless authentication**, your public key must be present on the remote server's `~/.ssh/authorized_keys` file. There are two ways to do this.
+
+<Tabs>
+  <Tab title="Using ssh-copy-id">
+    The `ssh-copy-id` command automates copying your public key to the server:
+
+    ```bash
+    ssh-copy-id <username>@<remote-server-ip-address/name>
+
+    # Specify a custom public key path with -i
+    ssh-copy-id -i <public-key-path> <username>@<remote-server-ip-address/name>
+    ```
+
+    After entering the remote server password, your public key from `~/.ssh/id_rsa.pub` is appended to the server's `~/.ssh/authorized_keys`.
+  </Tab>
+  <Tab title="Manual Copy">
+    You can manually copy the public key using standard shell commands:
+
+    ```bash
+    # View your public key
+    cat ~/.ssh/id_rsa.pub
+
+    # On the server, create the directory and append the key
+    mkdir -p ~/.ssh
+    echo "<public_key>" >> ~/.ssh/authorized_keys
+
+    # One-liner: pipe the key directly from local to server
+    cat ~/.ssh/id_rsa.pub | ssh <username>@<remote-server-ip-address/name> "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+    ```
+  </Tab>
+</Tabs>
+
+## Using an SSH Agent to Avoid Typing Your Private Key Passphrase
+
+If your private SSH key has a passphrase, you normally must enter it every time you initiate a connection. **SSH Agent** solves this by storing the decrypted private key in memory for the duration of your session.
+
+```bash
+# Start the SSH agent
+eval $(ssh-agent)
+
+# Add your default private key (~/.ssh/id_rsa)
+ssh-add
+
+# Add a specific private key
+ssh-add <private-key-path>
+```
+
+<Tip>
+  Run `ssh-add -l` to list all keys currently loaded into the SSH agent.
+</Tip>
+
+## Forward SSH Credentials to Use on a Server
+
+To connect from one server to another without copying private keys, you can **forward your SSH credentials** using agent forwarding.
+
+<Warning>
+  Ensure your SSH agent is running and your key is added with `ssh-add` before using agent forwarding.
+</Warning>
+
+```bash
+# Forward your local SSH credentials to the remote session
+ssh -A <username>@<remote-server-ip-address/name>
+```
+
+With agent forwarding, the remote server you connect to will be able to use your local private key to authenticate to any other host that your key has access to — without the key ever leaving your local machine.

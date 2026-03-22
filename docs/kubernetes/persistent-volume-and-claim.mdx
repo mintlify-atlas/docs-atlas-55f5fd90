@@ -1,0 +1,95 @@
+---
+title: Persistent Volume and Persistent Volume Claim
+description: Learn about PersistentVolumes and PersistentVolumeClaims in Kubernetes for managing durable storage resources.
+---
+
+## Concept and Usage
+
+**Persistent Volume (PV)** is a **storage resource** in the cluster provisioned by an administrator or dynamically via **Storage Classes**. A PV has its **own lifecycle**, meaning it is **not tied to any pod**.
+
+To use a PV in your pod, you create a **Persistent Volume Claim (PVC)** that requests a PV with specific storage requirements.
+
+<Note>
+  **PV and PVC are bound together** — one PV can only be bound to one PVC (**one-to-one relationship**). No other PVC can use the same PV's remaining capacity.
+</Note>
+
+<Steps>
+  <Step title="Create a PV">
+    ```yaml title="pv.yaml"
+    apiVersion: v1
+    kind: PersistentVolume
+    metadata:
+      name: pv-example
+      labels:
+        type: fast-storage  # Optional label for PV
+    spec:
+      capacity:
+        storage: 1Gi           # Reserve 1Gi storage
+      accessModes:
+        - ReadWriteOnce
+      persistentVolumeReclaimPolicy: Retain
+      hostPath:
+        path: /data
+    ```
+
+    **Access Modes:**
+
+    | Access Mode | Description |
+    | --- | --- |
+    | `ReadWriteOnce` | Mounted as read-write by a **single node**. Multiple pods on the same node can access it. |
+    | `ReadOnlyMany` | Mounted as read-only by **many nodes**. |
+    | `ReadWriteMany` | Mounted as read-write by **many nodes**. |
+    | `ReadWriteOncePod` | Mounted as read-write by a **single Pod** only, across the whole cluster. |
+
+    **Reclaim Policies:**
+
+    | Policy | Description |
+    | --- | --- |
+    | `Retain` | Volume remains until **manually deleted**. |
+    | `Delete` | Volume is **deleted when the PVC is deleted**. |
+
+    <Warning>
+      When deleting a PV, **delete the associated PVC first**, otherwise the PV will not be deleted.
+    </Warning>
+  </Step>
+
+  <Step title="Create a PVC">
+    When you create a PVC, Kubernetes will **bind the PVC to a PV** that meets the requirements. If no matching PV exists, the **PVC status will remain unbound**.
+
+    ```yaml title="pvc.yaml"
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: pvc-example
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      selector:           # Optional: bind to a specific PV by label
+        matchLabels:
+          type: fast-storage
+    ```
+  </Step>
+
+  <Step title="Use the PVC in a Pod">
+    ```yaml title="pod.yaml"
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: pod-example
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          volumeMounts:
+            - name: my-pvc-example  # Must match the volume name below
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: my-pvc-example
+          persistentVolumeClaim:
+            claimName: pvc-example
+    ```
+  </Step>
+</Steps>

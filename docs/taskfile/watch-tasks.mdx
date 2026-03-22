@@ -1,0 +1,37 @@
+---
+title: Watch Tasks
+description: Automatically re-run tasks when source files change using Taskfile's watch mode.
+---
+
+<Warning>
+  If you set `watch: true` on a task, it will **only run in watch mode when invoked directly from the CLI** via `task <task-name>`. If called from another task (directly or as a dependency), **it will not run in watch mode**. Watch mode is designed for interactive use, not automated pipelines.
+</Warning>
+
+Watch tasks **automatically re-run when files change**. This is particularly useful for development workflows where you want to rebuild or recompile your code whenever a file is modified.
+
+There are two ways to enable watch mode:
+- `--watch` or `-w` flag on the command line
+- `watch: true` field in the Taskfile
+
+The **default watch interval is 100 milliseconds**. You can change it by setting `interval` at the root of the Taskfile or passing `--interval` on the command line.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+interval: 200ms
+tasks:
+  dev:
+    watch: true
+    sources:
+      - 'test.txt'
+      - '**/*.py'
+    cmds:
+      - echo "File changed, running task..."
+      - echo "Rebuilding project..."
+```
+
+```bash
+# Enable watch mode from the CLI
+task --watch dev
+# or
+task -w dev
+```

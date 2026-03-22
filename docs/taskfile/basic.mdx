@@ -1,0 +1,119 @@
+---
+title: Basic Usage
+description: Get started with Taskfile by creating your first Taskfile, defining tasks, and running them.
+---
+
+## Getting Started with Taskfile
+
+<Steps>
+  <Step title="Create your Taskfile">
+    There are multiple ways to create a **Taskfile**:
+    - Create a Taskfile in the **current directory**
+    - Create a Taskfile in a **specific directory**
+    - Create a Taskfile with a **custom filename**
+    - **Manually** create a Taskfile
+
+    ```bash
+    # Create a Taskfile.yml in the current directory
+    task --init
+
+    # Create a Taskfile.yml in the specified directory (must exist)
+    task --init ./directory-path
+
+    # Create a custom Taskfile
+    task --init CustomTaskfile.yml
+
+    # Manually create a Taskfile
+    touch Taskfile.yml
+    ```
+  </Step>
+
+  <Step title="Open the Taskfile in your editor">
+    The generated Taskfile will look like this:
+
+    ```yaml title="Taskfile.yml"
+    version: '3'
+
+    vars:
+      GREETING: Hello, World!
+
+    tasks:
+      default:
+        cmds:
+          - echo "{{.GREETING}}"
+        silent: true
+    ```
+
+    Here is a breakdown of the fields:
+
+    | Field | Description |
+    | ----- | ----------- |
+    | `version` | The version of the Taskfile format to run |
+    | `vars` | Variables that can be used in the Taskfile |
+    | `tasks` | The tasks to run |
+    | `cmds` | The commands to run |
+    | `silent` | If true, task metadata will not be printed — only the command output |
+
+    The task name in this example is `default`. You can **define more tasks** by adding them to the `tasks` section.
+  </Step>
+
+  <Step title="Add a new task">
+    ```yaml title="Taskfile.yml"
+    version: '3'
+
+    vars:
+      GREETING: Hello, World!
+
+    tasks:
+      default:
+        cmds:
+          - echo "{{.GREETING}}"
+        silent: true
+      hello:
+        cmds:
+          - echo 'Hello World from Task!' > output.txt
+    ```
+  </Step>
+
+  <Step title="Run the task">
+    <Note>
+      Use `task --help` to see all available options and flags.
+    </Note>
+
+    When you run the `task` command, it looks for a Taskfile in the **current directory** or in the **specified directory**.
+
+    ```bash
+    # Run a task by name
+    task <task-name>
+
+    # Run the task in the current directory
+    task default
+
+    # Run the task in a specified directory
+    task --dir ./directory-path default
+
+    # Run the task with a custom Taskfile
+    task --taskfile CustomTaskfile.yml default
+    ```
+
+    To run the `hello` task:
+
+    ```bash
+    task hello
+    ```
+  </Step>
+
+  <Step title="Verify the output">
+    Check the contents of `output.txt`:
+
+    ```bash
+    cat output.txt
+    ```
+
+    You should see:
+
+    ```text
+    Hello World from Task!
+    ```
+  </Step>
+</Steps>

@@ -1,0 +1,54 @@
+---
+title: Manim Installation Troubleshooting
+description: Resolve pycairo build failures caused by a missing C compiler when installing Manim on Ubuntu with uv or pip.
+---
+
+## Resolving pycairo Build Errors Due to Missing C Compiler on Ubuntu
+
+When installing Manim with `uv add manim`, the process may fail with an error indicating that `pycairo` could not be built because no C compiler was found.
+
+### Error Output
+
+```bash
+karchunt@kcserver:~/Desktop/docs$ uv add manim
+Resolved 79 packages in 2.60s
+      Built srt==3.5.3
+  × Failed to build `pycairo==1.28.0`
+  ├─▶ The build backend returned an error
+  ╰─▶ Call to `mesonpy.build_wheel` failed (exit status: 1)
+
+      ../meson.build:1:0: ERROR: Unknown compiler(s): [['cc'], ['gcc'], ['clang'], ['nvc'], ['pgcc'], ['icc'], ['icx']]
+      The following exception(s) were encountered:
+      Running `cc --version` gave "[Errno 2] No such file or directory: 'cc'"
+      Running `gcc --version` gave "[Errno 2] No such file or directory: 'gcc'"
+      Running `clang --version` gave "[Errno 2] No such file or directory: 'clang'"
+
+      hint: This usually indicates a problem with the package or the build environment.
+```
+
+### Root Cause
+
+The error means your system is **missing a C compiler** (`gcc` or `clang`), which is required to compile `pycairo` — a native dependency of Manim.
+
+### Fix
+
+<Steps>
+
+### Install the required build tools
+
+```bash
+sudo apt update
+sudo apt install build-essential python3-dev libcairo2-dev libpango1.0-dev
+```
+
+<Note>
+  `build-essential` pulls in `gcc`, `make`, and other essential compilation tools. `libcairo2-dev` and `libpango1.0-dev` provide the native libraries that `pycairo` and Manim depend on.
+</Note>
+
+### Retry the Manim installation
+
+```bash
+uv add manim
+```
+
+</Steps>

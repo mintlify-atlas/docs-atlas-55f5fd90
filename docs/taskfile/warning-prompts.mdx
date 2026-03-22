@@ -1,0 +1,68 @@
+---
+title: Warning Prompts
+description: Require user confirmation before running potentially dangerous tasks using the prompt field.
+---
+
+Use the `prompt` field to **prompt the user for confirmation** before running a task. This is useful for tasks that may have **significant consequences**, such as deleting data or modifying a production environment.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+
+tasks:
+  example:
+    cmds:
+      - task: not-dangerous
+      - task: dangerous
+      - task: super-dangerous
+      - task: another-not-dangerous
+
+  not-dangerous:
+    internal: true
+    cmds:
+      - echo 'not dangerous command'
+
+  another-not-dangerous:
+    internal: true
+    cmds:
+      - echo 'another not dangerous command'
+
+  dangerous:
+    internal: true
+    prompt: This is a dangerous command... Do you want to continue?
+    cmds:
+      - echo 'dangerous command'
+
+  super-dangerous:
+    prompt:
+      - This is a dangerous command... Do you want to continue?
+      - Please confirm your action.
+    cmds:
+      - echo 'super dangerous command'
+```
+
+<Note>
+  The `prompt` field accepts either a single string or a **list of confirmation prompts**. Each prompt must be confirmed individually.
+</Note>
+
+```bash title="Demo and Output"
+# User declines the prompt
+ubuntu@touted-mite:~/nodejsfun$ task example
+task: [not-dangerous] echo 'not dangerous command'
+not dangerous command
+This is a dangerous command... Do you want to continue? [y/N]: n
+task: Failed to run task "example": task: Task "dangerous" cancelled by user
+
+# User confirms all prompts
+ubuntu@touted-mite:~/nodejsfun$ task example
+task: [not-dangerous] echo 'not dangerous command'
+not dangerous command
+This is a dangerous command... Do you want to continue? [y/N]: y
+task: [dangerous] echo 'dangerous command'
+dangerous command
+This is a dangerous command... Do you want to continue? [y/N]: y
+Please confirm your action. [y/N]: y
+task: [super-dangerous] echo 'super dangerous command'
+super dangerous command
+task: [another-not-dangerous] echo 'another not dangerous command'
+another not dangerous command
+```

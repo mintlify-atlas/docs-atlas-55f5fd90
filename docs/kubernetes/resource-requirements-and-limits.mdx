@@ -1,0 +1,83 @@
+---
+title: Resource Requirements and Limits
+description: Learn how to set CPU and memory resource requests and limits for Kubernetes pods to ensure proper scheduling and stability.
+---
+
+## Concept
+
+Every node has its own **capacity of resources** (CPU and memory). When you deploy a pod, it **consumes the node's resources**.
+
+The **kube-scheduler** is responsible for **scheduling pods to nodes**. It identifies the node with the required resources to deploy the pod. If a **node does not have the required resources**, the pod will be in **pending state**.
+
+```bash
+# See pod events — will show "insufficient resources" if pending
+kubectl describe pods <pod-name>
+```
+
+## Resource Requests
+
+Resource requests are the **minimum amount of CPU or memory** guaranteed to a container. By default, every pod has a default request of **0.5 CPU and 256MB of memory**.
+
+**CPU units:**
+- `0.1` CPU = `100m` (milli)
+- `1 CPU = 1 vCPU (AWS) = 1 Core (GCP, Azure) = 1 Hyperthread`
+
+**Memory units:**
+
+| Binary | Bytes |
+| ------ | ----- |
+| 1G (Gigabyte) | 1,000,000,000 |
+| 1M (Megabyte) | 1,000,000 |
+| 1K (Kilobyte) | 1,000 |
+| 1Gi (Gibibyte) | 1,073,741,824 |
+| 1Mi (Mebibyte) | 1,048,576 |
+| 1Ki (Kibibyte) | 1,024 |
+
+```yaml title="pod.yaml"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sample-pod
+spec:
+  containers:
+    - name: sample-container
+      image: ubuntu
+      resources:
+        requests:
+          memory: "2Gi"
+          cpu: 2
+```
+
+## Resource Limits
+
+Resource limits are the **maximum amount of CPU or memory** a container can use. By default, every pod has a default limit of **1 CPU and 512MB of memory**.
+
+If a pod exceeds its limits:
+- **CPU:** The system **throttles** the CPU so it does not go beyond the limit.
+- **Memory:** The system **kills the container** with an OOM (Out of Memory) error.
+
+```yaml title="pod.yaml"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sample-pod
+spec:
+  containers:
+    - name: sample-container
+      image: ubuntu
+      resources:
+        requests:
+          memory: "2Gi"
+          cpu: 2
+        limits:
+          memory: "4Gi"
+          cpu: 4
+```
+
+## Resource Quota
+
+See [Resource Quota for Namespace](/docs/kubernetes/namespace#resource-quota-for-namespace) for setting total resource limits at the namespace level.
+
+## Limit Range
+
+See [Limit Range for Namespace](/docs/kubernetes/namespace#limit-range-for-namespace) for setting per-container default, minimum, and maximum resource limits.

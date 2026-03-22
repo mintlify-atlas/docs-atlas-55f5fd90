@@ -1,0 +1,247 @@
+---
+title: Pod
+description: Learn about Kubernetes Pods, the smallest deployable unit, including multi-container patterns and init containers.
+---
+
+## What is a Pod?
+
+A Pod is a **single instance of an application** and is the **smallest unit** of a Kubernetes application. It provides an abstraction layer over containers. Normally, a pod runs only one application container inside it (**one-to-one relationship**).
+
+Key characteristics:
+- Each pod gets its **own IP address**. When a pod is recreated, a **new IP address** is assigned.
+- Containers inside the pod can **communicate with each other** using `localhost` as they **share the same network space**.
+- They can also share the **same storage space** (called a **volume**).
+
+### Pod Statuses
+
+| Status | Description |
+| --- | --- |
+| `CrashLoopBackOff` | The container is **crashing repeatedly**. The pod keeps trying to restart the container but it keeps failing on start. |
+
+## Commands
+
+```bash
+# Deploy an image to a pod
+kubectl run <pod-name> --image=<image>
+
+# Examples
+kubectl run nginx --image=nginx
+kubectl run nginx --image=nginx --port=8000
+kubectl run nginx --image=nginx --port=8080 --expose  # also creates a ClusterIP service
+
+kubectl get pods
+kubectl get pod <pod-name>
+kubectl describe pod <pod-name>
+kubectl delete pod <pod-name>
+
+kubectl exec <pod-name> -- <command>
+kubectl exec mypod -- /bin/bash
+
+kubectl apply -f <filename>
+kubectl create -f <filename>
+
+kubectl edit pod <pod-name>
+
+# Extract pod definition to a file
+kubectl get pod <pod-name> -o yaml > pod.yaml
+
+# Get more pod information (IP address, etc.)
+kubectl get pods -o wide
+```
+
+## Pod YAML
+
+Apply with `kubectl apply -f pod.yaml`.
+
+| Kind | apiVersion |
+| ---- | ---------- |
+| Pod | v1 |
+| Service | v1 |
+| ReplicaSet | apps/v1 |
+| Deployment | apps/v1 |
+
+```yaml title="pod.yaml"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp
+  labels:
+    name: myapp
+spec:
+  containers:
+    - name: myapp
+      image: nginx
+      ports:
+        - containerPort: 8080
+```
+
+## Restart Policy
+
+Restart policy defines the behavior of the pod when the container crashes.
+
+| Policy | Description |
+| --- | --- |
+| `Always` (default) | The container always restarts on any termination. |
+| `OnFailure` | The container restarts only on failure (non-zero exit status). |
+| `Never` | The container never restarts. |
+
+```yaml title="pod.yaml"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp
+spec:
+  containers:
+    - name: ubuntu
+      image: ubuntu
+  restartPolicy: Never
+```
+
+## Init Containers
+
+An init container is a **special type of container** that **runs before the main container**. It runs **only once** and **must complete successfully** before the main container starts.
+
+Use cases:
+- Wait for a database to be ready
+- Prepare a configuration file
+- Load data
+
+```yaml title="init-container.yaml"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sample-pod
+spec:
+  containers:
+    - name: main-container
+      image: api:1.0.0
+  initContainers:
+    - name: init-database
+      image: mysql
+      command: ['sh', '-c', 'mysql -h db -u root -p $MYSQL_ROOT_PASSWORD < /scripts/init.sql']
+```
+
+<Note>
+  If you specify multiple init containers, they will be **run in order**.
+</Note>
+
+## Multi-Container Pods
+
+Multi-container pods act as **helper containers**. The containers can **communicate directly via localhost** as they share the same network space, the same storage space, and the **same lifecycle** (created and destroyed together).
+
+### Design Patterns
+
+<Accordion title="Sidecar Pattern">
+  A sidecar container is **attached to the main container** to **extend or enhance** it. For example, a sidecar can collect logs from the main container and forward them to a centralized logging system.
+
+  **Use cases:** Logging, Monitoring, Security, Data synchronization
+
+  ```yaml title="sidecar.yaml"
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: sample-pod
+  spec:
+    containers:
+      - name: app-container
+        image: alpine
+        command: ["/bin/sh"]
+        args: ["-c", "while true; do date >> /var/log/index.html; sleep 2;done"]
+        volumeMounts:
+          - name: logs
+            mountPath: /var/log
+      - name: log-agent
+        image: nginx
+        ports:
+          - containerPort: 80
+        volumeMounts:
+          - name: logs
+            mountPath: /usr/share/nginx/html
+    volumes:
+      - name: logs
+        emptyDir: {}
+  ```
+</Accordion>
+
+<Accordion title="Adapter Pattern">
+  An adapter container **acts as a translator** between the main container and external systems, **transforming data into a standardized format** before sending it out.
+
+  **Use cases:** Data transformation, Protocol translation, API adaptation, Standardizing data format
+
+  ```yaml title="adapter.yaml"
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: sample-pod
+  spec:
+    containers:
+      - name: app-container
+        image: alpine
+        command: ["/bin/sh"]
+        args: ["-c", "while true; do date >> /var/log/debug.log; sleep 2;done"]
+        volumeMounts:
+          - name: logs
+            mountPath: /var/log
+      - name: log-adapter
+        args: ["/bin/sh"]
+        args: ["-c", "tail -f /var/log/debug.log|sed 's/^/DEBUG: /' > /var/log/transformed.log"]
+        volumeMounts:
+          - name: logs
+            mountPath: /var/log
+    volumes:
+      - name: logs
+        emptyDir: /var/log
+  ```
+</Accordion>
+
+<Accordion title="Ambassador Pattern">
+  An ambassador container **acts as a proxy** to external services. It **hides the complexity of external services** from the main container, managing all incoming and outgoing network traffic.
+
+  **Use case:** Your application connects to different databases based on the environment (dev/staging/prod). The ambassador manages the connection so the main app always connects to `localhost`.
+
+  ```yaml title="ambassador.yaml"
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: db-config
+  data:
+    development: "dev-db.example.com"
+    staging: "staging-db.example.com"
+    production: "prod-db.example.com"
+  ---
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: sample-pod
+    labels:
+      app: ambassador
+      environment: development
+  spec:
+    containers:
+      - name: backend
+        image: backend
+        env:
+          - name: DB_HOST
+            value: "localhost"
+        ports:
+          - containerPort: 8080
+      - name: ambassador
+        image: ambassador-image
+        env:
+          - name: ENVIRONMENT
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.labels.environment
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: db-config
+                key: $(ENVIRONMENT)
+        ports:
+          - containerPort: 80
+  ```
+
+  - `ConfigMap` stores database connections per environment.
+  - The `ambassador` container reads env variables and connects to the correct database.
+  - The `backend` container connects to the `ambassador` as `localhost`.
+</Accordion>

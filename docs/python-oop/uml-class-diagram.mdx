@@ -1,0 +1,202 @@
+---
+title: UML Class Diagram
+description: Learn how to read and create UML class diagrams, including class notation, visibility, and all relationship types with examples.
+---
+
+## What is a UML Class Diagram?
+
+A UML (**Unified Modeling Language**) class diagram is a **visual representation of classes** and their **relationships** in an object-oriented system. It helps in understanding the structure of the system and shows how classes interact with each other.
+
+A class diagram typically shows:
+- Class name
+- Attributes (properties)
+- Methods (functions)
+- Relationships (associations, inheritance, composition, etc.)
+
+## Class Notation
+
+Each class is represented as a box divided into three sections: **name**, **attributes**, and **methods**.
+
+```
+┌─────────────────────────┐
+│          Car            │  ← Class Name
+├─────────────────────────┤
+│ - brand: String         │  ← Attributes
+│ - model: String         │
+│ - year: int             │
+├─────────────────────────┤
+│ + startEngine(): void   │  ← Methods
+│ + stopEngine(): void    │
+│ + drive(speed: int): void│
+└─────────────────────────┘
+```
+
+**Visibility modifiers:**
+- `+` Public
+- `-` Private
+- `#` Protected
+
+## Relationship Types
+
+<Accordion title="Association">
+
+**Association** represents a **bi-directional relationship** between two classes where one uses or interacts with another. It means **uses**, **has-a**, **works with**, or **belongs to**. One class holds a **permanent reference** to another as part of its state.
+
+**Example:** A `Car` has an `Engine` and multiple `Wheels`.
+
+- Each `Car` has one `Engine` and each `Engine` belongs to one `Car`.
+- Each `Car` contains multiple `Wheels` and each `Wheel` belongs to one `Car`.
+
+```
+Car "1" ── "1" Engine : has a
+Car "1" ── "1..*" Wheel : has
+```
+
+</Accordion>
+
+<Accordion title="Directed Association">
+
+A **directed association** is a **one-way (unidirectional) relationship** where one class points to another, indicating that one class uses or interacts with another.
+
+**Example:** A `Driver` drives a `Car`. The association is directed from `Driver` to `Car` — the `Driver` uses the `Car`, but the car does not necessarily belong to the driver.
+
+```
+Driver ──► Car : drives
+```
+
+Another example: A `Teacher` teaches a `Course`. The association is directed from `Teacher` to `Course`.
+
+</Accordion>
+
+<Accordion title="Aggregation">
+
+**Aggregation** represents a **part-of relationship** where one class is a whole and another is a part. The part can **exist independently** of the whole (hollow diamond `◇`).
+
+**Example:** A `Team` consists of multiple `Players`. If the `Team` is deleted, the `Players` can still exist independently.
+
+```
+Team "1" ◇── "1..*" Player : has
+```
+
+Another example: A `Department` has many `Employees`. Employees exist independently of the department.
+
+</Accordion>
+
+<Accordion title="Composition">
+
+**Composition** is a strong part-of relationship where the part **cannot exist independently** of the whole (filled diamond `◆`). If the whole is deleted, the parts are also deleted.
+
+**Example:** A `House` consists of multiple `Rooms`. If the `House` is destroyed, the `Rooms` are also destroyed.
+
+```
+House "1" ◆── "1..*" Room : composed of
+```
+
+Another example: A `Book` has many `Chapters`. If the book is deleted, the chapters are also deleted.
+
+</Accordion>
+
+<Accordion title="Generalization (Inheritance)">
+
+**Generalization** (also known as **inheritance**) represents an **is-a relationship** where one class (subclass/child) extends another (superclass/parent). The subclass inherits the attributes and methods of the superclass.
+
+**Example:** A `Bird` is a type of `Animal`, and a `Fish` is also a type of `Animal`.
+
+```
+Animal ◁── Bird : is a
+Animal ◁── Fish : is a
+```
+
+</Accordion>
+
+<Accordion title="Realization (Interface)">
+
+**Realization** represents a **contract** between a class and an interface. A class that implements an interface must provide **concrete implementations** for all methods defined in the interface.
+
+**Example:** A `Shape` interface defines `draw()` and `area()`, and `Circle` and `Rectangle` implement this interface.
+
+```
+Shape ◁·· Circle : realizes
+Shape ◁·· Rectangle : realizes
+```
+
+</Accordion>
+
+<Accordion title="Dependency">
+
+**Dependency** represents a **depends-on relationship** where one class (client) relies on another (supplier) to function. It is a **weak relationship** — the client uses the supplier temporarily (e.g., as a method parameter), not as a permanent attribute.
+
+<Note>
+  Dependency is considered **loosely coupled** — the client uses the supplier temporarily and does not maintain a permanent reference. However, changes to the supplier's interface (method signatures) can still require updates to the client.
+</Note>
+
+**Example:** A `ReportGenerator` uses a `Printer` to print reports.
+
+```
+ReportGenerator ··► Printer
+```
+
+</Accordion>
+
+<Accordion title="Usage Dependency">
+
+**Usage Dependency** is a type of dependency where one class uses another for a **specific temporary purpose** — usually within a method. The client does not maintain a permanent reference to the supplier.
+
+**Example:** A `Mechanic` repairs a `Car`. The `Mechanic` uses the `Car` to perform repairs, but the `Car` does not depend on the `Mechanic`.
+
+```
+Mechanic ··► Car : uses
+```
+
+</Accordion>
+
+## Full Example: Order Management System
+
+The following diagram demonstrates all relationship types in a realistic Order Management System.
+
+```
+%% Generalization
+Customer ◁── RegisteredCustomer
+Customer ◁── GuestCustomer
+
+%% Realization
+PaymentMethod ◁·· CreditCard
+PaymentMethod ◁·· PayPal
+
+%% Association
+Customer "1" ── "0..*" Order : places
+
+%% Composition
+Order "1" ◆── "1" ShippingInfo : ships to
+
+%% Aggregation
+Order "1" ◇── "1..*" OrderItem : contains
+OrderItem "1" ◇── "1" Product : refers to
+
+%% Dependency
+Invoice ··► Order
+
+%% Usage Dependency
+Order ··► PaymentMethod : uses
+```
+
+<CardGroup cols={2}>
+  <Card title="Generalization">
+    `RegisteredCustomer` and `GuestCustomer` both inherit from `Customer`, sharing common attributes (id, name, email) while adding their own.
+  </Card>
+  <Card title="Realization">
+    `CreditCard` and `PayPal` implement the `PaymentMethod` interface, both providing a `pay(amount: float): bool` method.
+  </Card>
+  <Card title="Association">
+    One customer can place multiple orders; each order is placed by exactly one customer.
+  </Card>
+  <Card title="Composition">
+    Each order has one `ShippingInfo`. If the order is deleted, its shipping info is also deleted.
+  </Card>
+  <Card title="Aggregation">
+    An order contains multiple `OrderItem`s, but items can exist independently of the order. Each item refers to a `Product` that also exists independently.
+  </Card>
+  <Card title="Dependency">
+    An `Invoice` is generated from an `Order`, but the invoice does not own the order. An `Order` uses a `PaymentMethod` to process payment but does not own it.
+  </Card>
+</CardGroup>

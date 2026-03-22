@@ -1,0 +1,38 @@
+---
+title: Task Cleanup with Defer
+description: Guarantee cleanup commands run after a task completes — even on failure — using the defer keyword.
+---
+
+<Note>
+  If you have multiple deferred commands, they run in **reverse order** (last deferred runs first). This mirrors the behavior of `defer` in Go.
+</Note>
+
+Use the `defer` feature to **ensure that a cleanup command runs after the main task**, regardless of whether the task succeeded or failed. This is useful for tasks that require cleanup actions such as removing temporary files or releasing resources.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+tasks:
+  install:
+    cmds:
+      - npm install
+      - defer: rm -rf .cache
+      - echo "Installation complete"
+      - defer: echo "Cleanup task executed"
+```
+
+In this example, deferred commands run **at the end of the task in reverse registration order**:
+1. `echo "Cleanup task executed"` (registered last → runs first)
+2. `rm -rf .cache` (registered first → runs last)
+
+```bash title="Demo and Output"
+ubuntu@touted-mite:~/nodejsfun$ task install
+task: [install] npm install
+...
+up to date, audited 185 packages in 1s
+...
+task: [install] echo "Installation complete"
+Installation complete
+task: [install] echo "Cleanup task executed"
+Cleanup task executed
+task: [install] rm -rf .cache
+```

@@ -1,0 +1,55 @@
+---
+title: SSH Overview
+description: Learn what SSH is, how it works, and how it authenticates users using passwords or SSH key pairs.
+---
+
+## What is SSH?
+
+SSH stands for **Secure Shell (SSH) Protocol** that is mainly used to **connect** to a Linux server remotely. It gives you the opportunity to access a server or computer over an unsecured network.
+
+## How SSH Works
+
+**Client-server architecture** is used to implement SSH connections. The remote machine (**Server**) must be running **SSH daemon** — the heart of SSH. A specific network port (**22**) is used for connection requests, authentication, and login into shell sessions when the user provides the correct credentials.
+
+## How SSH Authenticates Users
+
+SSH supports two primary authentication methods: **passwords** and **SSH keys**.
+
+<CardGroup cols={2}>
+  <Card title="Password" icon="lock">
+    Password logins are encrypted but **not recommended**. Malicious users or bots can repeatedly attempt to authenticate, potentially leading to **security compromises**. Passwords are considered **less secure** than SSH keys.
+  </Card>
+  <Card title="SSH Keys" icon="key">
+    SSH keys consist of a **public and private cryptographic key pair**. The public key can be shared freely, while the private key must be kept secure and never exposed to anyone.
+  </Card>
+</CardGroup>
+
+<Warning>
+  Avoid using password authentication for SSH. SSH key-based authentication is significantly more secure and should be preferred in all environments.
+</Warning>
+
+## SSH Key Authentication Flow
+
+<Steps>
+  <Step title="Generate an SSH key pair">
+    The client must have an **SSH key pair (public and private)** on their local computer.
+  </Step>
+  <Step title="Copy the public key to the server">
+    The local client's **public key** must be copied to `~/.ssh/authorized_keys` in the user's home directory on the remote server.
+  </Step>
+  <Step title="Client initiates connection">
+    When the client connects to the host/server, it informs the server which public key to use for authentication.
+  </Step>
+  <Step title="Server validates the public key">
+    The server checks the public key against the `~/.ssh/authorized_keys` file. If valid, it generates a random string and encrypts it using the public key.
+  </Step>
+  <Step title="Server sends the encrypted challenge">
+    The server sends the encrypted message to the client to verify whether the client holds the associated private key.
+  </Step>
+  <Step title="Client decrypts and responds">
+    The client uses its **private key** to decrypt the message and sends the decrypted information back to the server.
+  </Step>
+  <Step title="Server grants access">
+    The server validates the decrypted information. If correct, the client is authenticated and granted access to a shell session.
+  </Step>
+</Steps>

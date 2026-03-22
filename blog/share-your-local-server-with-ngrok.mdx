@@ -1,0 +1,57 @@
+---
+title: Share Your Local Server with Ngrok
+description: Learn how to expose your local server to the internet using Ngrok, including installation, authentication, and starting a tunnel.
+---
+
+[Ngrok](https://ngrok.com/) creates a secure tunnel from a public URL to your local server, making it easy to share work in progress, test webhooks, or demo applications.
+
+<Steps>
+  ### Sign up for Ngrok
+
+  Create a free account at [ngrok.com](https://ngrok.com/) to get your auth token.
+
+  ### Claim a free subdomain (Optional)
+
+  Ngrok allows you to claim one free static subdomain from your dashboard.
+
+  ### Download and install Ngrok
+
+  Download the package for your OS, then extract and install it:
+
+  ```bash
+  tar -xvzf ngrok-v3-stable-linux-amd64.tgz
+  ```
+
+  Optionally, copy it to `/usr/local/bin` to make it available system-wide:
+
+  ```bash
+  cp ngrok /usr/local/bin
+  ```
+
+  ### Connect your account
+
+  Authenticate Ngrok with your auth token:
+
+  ```bash
+  ngrok config add-authtoken <auth-token>
+  ```
+
+  <Note>
+    The auth token is saved to `~/.config/ngrok/ngrok.yml`.
+  </Note>
+
+  ### Start an HTTP tunnel
+
+  Forward traffic to your local server:
+
+  ```bash
+  ngrok http 80
+
+  # With a custom domain (if you claimed one)
+  ngrok http --domain=<domain-name> 80
+  ```
+
+  ### Access your public URL
+
+  Open the URL shown in the Ngrok terminal output (or your custom domain) in any browser. Your local server is now publicly accessible.
+</Steps>

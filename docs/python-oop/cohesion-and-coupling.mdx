@@ -1,0 +1,62 @@
+---
+title: Cohesion and Coupling
+description: Understand the principles of cohesion and coupling in OOP design and why high cohesion and low coupling lead to maintainable software.
+---
+
+<Warning>
+  **High coupling** and **low cohesion** lead to **difficult-to-maintain code**. Strive for **low coupling** and **high cohesion** for more maintainable, understandable, and flexible software.
+</Warning>
+
+## Coupling
+
+**Coupling** refers to the **degree of interdependence between software modules** — how closely connected modules are and how much they rely on each other.
+
+| Type | Description |
+| ---- | ----------- |
+| **High Coupling** | Modules are **tightly connected**; changes in one module can **significantly affect** others. |
+| **Low Coupling** | Modules are **independent**; changes in one module have **minimal impact** on others. |
+
+## Cohesion
+
+**Cohesion** refers to the **degree to which elements within a module belong together** — how closely related and focused the responsibilities of a single module are.
+
+| Type | Description |
+| ---- | ----------- |
+| **High Cohesion** | A module has a **single, well-defined responsibility** and all its elements are closely related. |
+| **Low Cohesion** | A module has **multiple, unrelated responsibilities** and its elements are not closely related. |
+
+## Differences Between Cohesion and Coupling
+
+| Aspect | Coupling | Cohesion |
+| ------ | -------- | -------- |
+| Definition | Degree of **interdependence between modules** | Degree to which **elements within a module** belong together |
+| Focus | Relationships **between** modules | Relationships **within** a module |
+| Goal | **Low** coupling (loosely coupled) | **High** cohesion (highly cohesive) |
+
+## Real-World Example: Library System
+
+Here's a Library System designed with **high cohesion** and **low coupling**:
+
+```
+BookManager          UserManager          NotificationManager
+───────────          ───────────          ───────────────────
+Add Book             Add User             Send Email
+Remove Book          Remove User          Send SMS
+Search Book          Search User
+    │                    │
+    └────────────────────┴──────► NotificationManager
+                                  (loosely coupled via interface)
+```
+
+**High Cohesion** — each module has focused, single-purpose responsibilities:
+- `BookManager` only manages books (add, remove, search).
+- `UserManager` only manages users (add, remove, search).
+- `NotificationManager` only handles notifications (email, SMS).
+
+**Low Coupling** — modules work independently and interact only through clear interfaces:
+- `BookManager`, `UserManager`, and `NotificationManager` are loosely coupled.
+- Modules interact via well-defined interfaces rather than direct internal access.
+
+<Tip>
+  Think of high cohesion as **"each class does one thing well"** and low coupling as **"classes don't need to know the internals of other classes"**. Together, these principles make systems easier to test, extend, and maintain.
+</Tip>

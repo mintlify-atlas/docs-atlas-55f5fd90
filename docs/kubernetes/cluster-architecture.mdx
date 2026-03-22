@@ -1,0 +1,239 @@
+---
+title: Kubernetes Architecture
+description: A deep dive into the Kubernetes cluster architecture, covering the control plane components and worker node components.
+---
+
+## Cluster Architecture
+
+Each Kubernetes cluster has a **master node** (control plane) and one or more **worker nodes**. The master node is responsible for **managing the cluster**, while the worker nodes are responsible for **hosting applications as containers** and **running the applications**.
+
+<Info>
+  Kubernetes supports other runtime engines that adhere to the OCI standards, like containerd or Rocket, so it is not necessary to install Docker before installing Kubernetes.
+</Info>
+
+Here is an **overview** of a Kubernetes cluster:
+
+- The cluster has **master and worker nodes**, both serving different purposes.
+- **Master node**
+  - **ETCD Cluster** — stores information regarding the cluster.
+  - **kube-controller-manager** — manages various controllers, each with different functions.
+  - **kube-scheduler** — identifies and schedules pods on nodes. It *only decides* which pod goes to which node.
+  - **kube-apiserver** — orchestrates all cluster operations and acts as the frontend to the cluster.
+- **Worker node**
+  - **kubelet** — registers the node with the kube-apiserver, creates pods on the node, and monitors node/pod state.
+  - **kube-proxy** — creates appropriate routing rules when a new service is created to establish communication between containers via services.
+
+## Cluster
+
+A cluster is a **set of nodes grouped** together. With multiple nodes within a cluster, it can **distribute** or **share the workload**. As a result, your application remains **accessible** even if one of the nodes **fails**.
+
+## Nodes
+
+A node is a **worker machine** — either physical or virtual depending on the Kubernetes cluster. Each node is **managed by the control plane** and can have **multiple pods** within it. This is where **containers are launched** by Kubernetes.
+
+## Master Node (Control Plane)
+
+<Info>
+  The master node can be **hosted** in the form of **containers**.
+</Info>
+
+A master node is responsible for:
+
+- **Managing** the cluster
+- **Managing**, **planning**, **scheduling**, and **monitoring** the nodes
+- **Storing** cluster information such as nodes, pods, configs, etc.
+- **Transferring** the workload of a **failed node** to another **worker node**
+
+These tasks are performed through a set of **components** known as the control plane components.
+
+### ETCD Cluster
+
+ETCD is a **distributed, reliable key-value stored database** used to store **information regarding the cluster** such as nodes, pods, configs, secrets, accounts, roles, bindings, and others.
+
+Data stored includes:
+- Cluster configuration data
+- Secrets and state information
+- Certificates and keys
+
+All information you see when you run `kubectl get` comes from the **ETCD server**. All changes made to the cluster (adding nodes, deploying pods, etc.) are **updated in the ETCD server**.
+
+<Tabs>
+  <Tab title="kubeadm">
+    The `kubeadm` tool auto-deploys the ETCD server as a Pod in the `kube-system` namespace.
+
+    ```bash
+    # Exec into the ETCD pod
+    kubectl exec etcd-controlplane -n kube-system -- etcdctl get / --prefix --keys-only
+    ```
+
+    The root directory is `registry`, and below that are various Kubernetes objects (nodes, pods, deployments, etc.).
+  </Tab>
+  <Tab title="Manual">
+    Download from [ETCD releases](https://github.com/etcd-io/etcd/releases) and follow [ETCD installation instructions](https://etcd.io/docs/v3.5/install/).
+
+    The `--advertise-client-urls` flag (default port `2379`) must be configured in the **kube-apiserver configuration file**.
+  </Tab>
+</Tabs>
+
+### Kube Controller Manager
+
+The kube controller manager **manages various controllers** in Kubernetes:
+
+- node-controller
+- replication-controller
+- namespace-controller
+- deployment-controller
+- endpoint-controller
+- job-controller, etc.
+
+Each controller is a **process** responsible for **monitoring the state** of various components and **resolving situations** to the **desired state**.
+
+<Accordion title="Node Controller">
+  The node controller **monitors node status** and **takes necessary action** to ensure **applications are running**.
+
+  - Nodes are **tested every 5 seconds** to ensure health.
+  - After **40 seconds** of not receiving heartbeats, the node is **marked as unreachable**.
+  - The system **gives the node 5 minutes to return**.
+  - If pods are part of a **replicaset**, they will be **removed** from the failed node and **provisioned on healthy nodes**.
+</Accordion>
+
+<Accordion title="Replication Controller">
+  The replication controller **monitors the replicaset status** and **takes necessary action** to ensure that the **desired number of PODs** are **available** at all times. If a POD dies, it creates a new one.
+</Accordion>
+
+#### Inspecting kube-controller-manager
+
+```bash
+# Find the kube-controller-manager pod
+kubectl get pods -n kube-system
+
+# View pod config options (on control-plane node)
+cat /etc/kubernetes/manifests/kube-controller-manager.yaml
+
+# View service options
+cat /etc/systemd/system/kube-controller-manager.service
+
+# View running process
+ps -aux | grep kube-controller-manager
+```
+
+### Kube Scheduler
+
+<Info>
+  The kube-scheduler only **decides** which pod goes to which node. The **kubelet** is the one who actually **places** the pod. Additional scheduling features include Taints and Tolerations, Node Selectors, and Node Affinity.
+</Info>
+
+The kube scheduler **identifies** and **schedules pods on nodes** based on resource requirements. It goes through **2 phases**:
+
+1. **Filter** — removes nodes that do not fit the pod's requirements (e.g., insufficient CPU).
+2. **Rank nodes** — assigns a score using a priority function, calculating free space after pod placement. The highest score wins.
+
+**Example:** Pod requires 5 CPUs. Node 2 has 10 CPUs → score `10 - 5 = 5`. Node 3 has 20 CPUs → score `20 - 5 = 15`. Node 3 wins.
+
+```bash
+# View kube-scheduler pod config
+cat /etc/kubernetes/manifests/kube-scheduler.yaml
+
+# View running process
+ps -aux | grep kube-scheduler
+```
+
+### Kube API Server
+
+<Info>
+  The kube-apiserver **orchestrates all cluster operations**. The Kubernetes API is **exposed** for external users to manage the cluster, for controllers to monitor cluster state, and for worker nodes to communicate with the server.
+</Info>
+
+The kube-apiserver is the **primary management component** and **acts as the frontend** to the cluster. All internal and external communication goes via the kube-apiserver.
+
+**Steps for `kubectl get <something>`:**
+
+<Steps>
+  <Step title="Authenticate">
+    The request is authenticated.
+  </Step>
+  <Step title="Validate">
+    The request is validated.
+  </Step>
+  <Step title="Retrieve">
+    Data is retrieved from the ETCD cluster and returned to the user.
+  </Step>
+</Steps>
+
+**Steps for creating a Pod:**
+
+<Steps>
+  <Step title="Authenticate & Validate">
+    The request is authenticated and validated.
+  </Step>
+  <Step title="Create Pod Object">
+    A Pod object is created without a node assigned, ETCD is updated, and a confirmation is returned to the user.
+  </Step>
+  <Step title="Scheduler">
+    The scheduler identifies the best node and informs the kube-apiserver, which updates ETCD.
+  </Step>
+  <Step title="kubelet">
+    The kube-apiserver sends instructions to the kubelet on the appropriate worker node. The kubelet creates the pod and tells the container runtime to pull the image and run it.
+  </Step>
+  <Step title="Status Update">
+    The kubelet updates status back to kube-apiserver, which updates ETCD.
+  </Step>
+</Steps>
+
+```bash
+# You can also interact with kube-apiserver directly
+curl -X POST /api/v1/namespace/default/pods
+
+# View kube-apiserver pod config
+cat /etc/kubernetes/manifests/kube-apiserver.yaml
+
+# View running process
+ps -aux | grep kube-apiserver
+```
+
+## Worker Node
+
+### kubelet
+
+The **kubelet** is an **agent** that **runs on each node** in the cluster. It:
+
+- **Registers the node** with the kube-apiserver
+- **Listens for instructions** from the kube-apiserver
+- **Creates pods** on the node and tells the container runtime to pull images
+- **Reports status** back to kube-apiserver after operations complete
+- **Monitors** node and pod/container state
+
+<Warning>
+  By default, **kubelet is not automatically deployed** by the `kubeadm` tool. You must install it manually on worker nodes. Deploying `kubelet` as a pod is **not a good practice** — it is designed to run as a system service on each node.
+</Warning>
+
+```bash
+# View running kubelet process
+ps -aux | grep kubelet
+
+# Default kubelet config locations
+# /var/lib/kubelet/config.yaml
+# /etc/kubernetes/kubelet.conf  (used to authenticate with kube-apiserver)
+```
+
+### kube-proxy
+
+kube-proxy is a **network proxy** that runs on each node in the cluster. It **maintains network rules** on nodes, allowing network communication to Pods from inside or outside the cluster.
+
+Every pod can **reach other pods** using an **internal virtual pod network** connecting all nodes. However, pod IP addresses are **not guaranteed** to remain the same across restarts.
+
+This is why we create **Service** objects — they get a stable name and IP address. kube-proxy handles traffic routing to services by creating **IPTable rules** on each node:
+
+```
+IPTable: 10.106.0.3 (service) --> 10.106.0.2 (pod)
+```
+
+Whenever a new service is created, kube-proxy creates appropriate routing rules on all worker nodes so containers can communicate via services.
+
+<Info>
+  kube-proxy is deployed as a **DaemonSet** in Kubernetes, so a kube-proxy pod is always deployed on each new node.
+
+  ```bash
+  kubectl get daemonset -n kube-system
+  ```
+</Info>

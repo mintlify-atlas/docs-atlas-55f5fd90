@@ -1,0 +1,28 @@
+---
+title: Install Packages Using a .deb File
+description: Learn how to install packages on Debian-based systems using a .deb file and the dpkg command.
+---
+
+Installing packages from a `.deb` file is straightforward using the `dpkg` command-line tool.
+
+<Steps>
+  ### Navigate to your `.deb` file location
+
+  ```bash
+  cd /path/to/your/deb/file
+  ```
+
+  ### Install the `.deb` package
+
+  ```bash
+  sudo dpkg -i <file-name>.deb
+  ```
+
+  <Note>
+    If the installation fails due to missing dependencies, fix them with:
+
+    ```bash
+    sudo apt --fix-broken install
+    ```
+  </Note>
+</Steps>

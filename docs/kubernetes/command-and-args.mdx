@@ -1,0 +1,26 @@
+---
+title: Commands and Arguments
+description: Learn how to use commands and args in Kubernetes pod specs, and how they map to Dockerfile ENTRYPOINT and CMD.
+---
+
+## Usage of Commands and Arguments
+
+Kubernetes `command` and `args` in a Pod spec **override** the Dockerfile's `ENTRYPOINT` and `CMD` respectively:
+
+| Kubernetes | Dockerfile |
+| --- | --- |
+| `command` | `ENTRYPOINT` |
+| `args` | `CMD` |
+
+```yaml title="pod.yaml"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-name
+spec:
+  containers:
+    - name: container-name
+      image: ubuntu:22.04
+      command: ["sleep"]  # Overrides ENTRYPOINT in Dockerfile
+      args: ["10"]        # Overrides CMD in Dockerfile
+```

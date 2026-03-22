@@ -1,0 +1,37 @@
+---
+title: Run Task in Specific Order
+description: Run tasks serially and in a guaranteed order using cmds instead of deps.
+---
+
+Dependencies (`deps`) **run in parallel** and are **not guaranteed to run in order**. To run tasks **serially in a specific order**, use `cmds` with `task:` references instead.
+
+```yaml title="Taskfile.yml"
+version: '3'
+tasks:
+  build:
+    desc: Build the project
+    cmds:
+      - echo "Building the project..."
+
+  test:
+    desc: Run tests
+    cmds:
+      - echo "Running tests..."
+
+  lint:
+    desc: Lint the code
+    cmds:
+      - echo "Linting code..."
+
+  all:
+    desc: Run lint, build, and test in order
+    cmds:
+      - task: lint
+      - task: build
+      - task: test
+      - echo "All tasks completed!"
+```
+
+<Note>
+  By listing tasks under `cmds` with `task:` references, each task is executed **sequentially** — `lint` will always complete before `build`, and `build` before `test`.
+</Note>

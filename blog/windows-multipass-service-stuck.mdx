@@ -1,0 +1,35 @@
+---
+title: "[Windows] Multipass Service Stuck"
+description: Resolve the Multipass service getting stuck on Windows by force-killing the process and restarting the service.
+---
+
+## Multipass Service Stuck on Windows
+
+In some cases the Multipass service on Windows can get stuck, preventing you from starting or stopping it normally. Follow these steps to recover:
+
+<Steps>
+
+### Check for Stuck Processes
+
+Open Task Manager (`Ctrl+Shift+Esc`), look for any `multipassd.exe` or related Multipass processes, and end them manually.
+
+### Force Kill the Service
+
+Open **PowerShell as Administrator** and find the Multipass service PID:
+
+```powershell
+Get-WmiObject win32_service | Where-Object { $_.Name -eq "Multipass" } | Select-Object ProcessId
+Stop-Process -Id <PID> -Force
+```
+
+### Restart the Multipass Service
+
+```powershell
+Restart-Service Multipass
+```
+
+### Reboot if Still Stuck
+
+If the service remains stuck after the steps above, reboot your computer to fully clear the stuck state.
+
+</Steps>

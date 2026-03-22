@@ -1,0 +1,108 @@
+---
+title: Fix NPM No Write Permissions to Global System Directory
+description: Learn how to resolve the EACCES permission denied error when installing npm packages globally.
+---
+
+When you **install npm packages globally** using the `-g` flag, you might encounter this error:
+
+```text
+npm error code EACCES
+npm error syscall mkdir
+npm error path /usr/lib/node_modules/lib
+npm error errno -13
+npm error Error: EACCES: permission denied, mkdir '/usr/lib/node_modules/lib'
+npm error The operation was rejected by your operating system.
+npm error It is likely you do not have the permissions to access this file as the current user
+```
+
+<Note>
+  `EACCES` errors indicate permission denied issues.
+</Note>
+
+To resolve this issue, choose one of the following methods.
+
+## Method 1: Change npm's default global directory (Recommended)
+
+Configure npm to use a directory in your home folder where you have write permissions.
+
+<Steps>
+
+### Create a folder for global installations
+
+```bash
+mkdir ~/.npm-global
+```
+
+### Configure npm to use the new path
+
+```bash
+npm config set prefix '~/.npm-global'
+```
+
+### Update your shell environment
+
+Add the following line to `~/.bashrc`:
+
+```bash
+export PATH=~/.npm-global/bin:$PATH
+```
+
+### Apply the changes
+
+```bash
+source ~/.bashrc
+```
+
+### Re-run the installation
+
+```bash
+npm install -g <package>
+```
+
+</Steps>
+
+## Method 2: Use a Node Version Manager
+
+Tools like [nvm (Node Version Manager)](https://github.com/nvm-sh/nvm) install Node.js and npm directly in your home directory, bypassing the `/usr/lib` permission issues automatically.
+
+<Steps>
+
+### Download and install nvm
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+```
+
+### Export NVM environment variables
+
+```bash
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+```
+
+### Install a version of Node
+
+```bash
+nvm install node
+```
+
+### Install your package
+
+```bash
+npm install -g <package>
+```
+
+</Steps>
+
+## Method 3: Change global directory ownership
+
+Change the ownership of the existing `node_modules` folder to your current user.
+
+```bash
+sudo chown -R $(whoami) /usr/lib/node_modules
+```
+
+<Warning>
+  This method modifies system-level directory ownership. Use it with caution, and prefer Method 1 or Method 2 for a safer long-term solution.
+</Warning>

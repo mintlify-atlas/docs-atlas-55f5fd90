@@ -1,0 +1,127 @@
+---
+title: YouTube Video Downloader using Python
+description: Learn how to download YouTube videos using Python with the yt-dlp library.
+---
+
+In this tutorial, we will learn how to download YouTube videos using Python with the `yt-dlp` library.
+
+<Info>
+  **yt-dlp on PyPI:** https://pypi.org/project/yt-dlp/
+
+  Before starting, make sure you have Python installed. You can download it from [python.org](https://www.python.org/downloads/).
+</Info>
+
+<Steps>
+
+### Install the `yt-dlp` library
+
+This example uses `uv` as the package manager, but you can use `pip` or any other package manager.
+
+```bash
+uv init --bare
+uv add yt-dlp
+```
+
+### Verify the installation
+
+```bash
+uv run yt-dlp --version
+```
+
+### Install `ffmpeg`
+
+The `yt-dlp` library requires `ffmpeg` to process video and audio files.
+
+<CodeGroup>
+
+```bash Ubuntu
+sudo apt update
+sudo apt install ffmpeg -y
+ffmpeg -version
+```
+
+```bash Windows (winget)
+winget install "FFmpeg (Essentials Build)"
+ffmpeg -version
+```
+
+</CodeGroup>
+
+### (Optional) Download a video via CLI
+
+<Info>
+  You can refer to the [format selection docs](https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file#format-selection) for more information about format options.
+</Info>
+
+Download a video in `mp3` format:
+
+```bash
+uv run yt-dlp -f bestaudio/best -x --audio-format mp3 -o <path-to-save> <youtube-video-url>
+```
+
+Sample output:
+
+```text
+[youtube] Extracting URL: https://www.youtube.com/watch?v=IViaa3o7BbU
+[youtube] IViaa3o7BbU: Downloading webpage
+[info] IViaa3o7BbU: Downloading 1 format(s): 251
+[download] Sleeping 5.00 seconds as required by the site...
+[download] Destination: output\test.webm
+[download] 100% of    4.11MiB in 00:00:00 at 23.39MiB/s
+[ExtractAudio] Destination: output\test.mp3
+Deleting original file output\test.webm (pass -k to keep)
+```
+
+### Create and execute a Python script
+
+Create a Python script that uses the `yt-dlp` library to download YouTube videos programmatically.
+
+<CodeGroup>
+
+```python yt.py (yt_dlp library)
+import os
+import yt_dlp
+
+# Replace with your desired YouTube video URL
+url = "youtube-video-url"
+ydl_opts = {
+  'format': 'bestaudio/best',
+  'postprocessors': [{
+    'key': 'FFmpegExtractAudio',
+    'preferredcodec': 'mp3',
+    'preferredquality': '320', # 0 for highest quality VBR
+  }],
+  'outtmpl': os.path.join("./", '%(title)s.%(ext)s'),
+}
+
+with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+  ydl.download([url])
+```
+
+```python yt.py (subprocess)
+import os
+import subprocess as s
+
+# Replace with your desired YouTube video URL
+url = "youtube-video-url"
+download_format = 'bestaudio/best'
+s.call(['yt-dlp', '-f', download_format, '-x', '--audio-format', 'mp3', '-o', os.path.join('./', '%(title)s.%(ext)s'), url])
+```
+
+</CodeGroup>
+
+<Info>
+  **On `preferredquality`:**
+  - `'320'` — guaranteed 320kbps constant bitrate (CBR)
+  - `'0'` — highest quality variable bitrate (VBR), often 220–260kbps but perceptually equivalent or better
+
+  VBR typically produces better quality at similar file sizes because it allocates bits more efficiently based on audio complexity.
+</Info>
+
+Run the script:
+
+```bash
+uv run yt.py
+```
+
+</Steps>

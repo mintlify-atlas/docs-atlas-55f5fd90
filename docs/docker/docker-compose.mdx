@@ -1,0 +1,131 @@
+---
+title: Docker Compose
+description: Use Docker Compose to define and run multi-container applications with a single compose.yaml file.
+---
+
+<Info>
+  Docker Compose is used to start up **multiple Docker containers** at the same time from a single configuration file.
+</Info>
+
+## compose.yaml
+
+A default network is **automatically created** for all composed containers, meaning every container is added to that network by default.
+
+<Note>
+  All configurations in `compose.yaml` mirror options available in the `docker run` command. The examples below use **Docker Compose v2** syntax — some v1 syntax is deprecated.
+</Note>
+
+```yaml
+name: apiapp
+services:
+  postgres:
+    image: postgres:14
+    networks:
+      - db
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  sonarqube:
+    image: sonarqube:lts
+    ports:
+      - '9000:9000'
+      - '9092:9092'
+    networks:
+      - db
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://postgres:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonarpasswd
+    depends_on:
+      - postgres
+
+  apiapplication:
+    build: ./
+    volumes:
+      - /app/node_modules
+      - ./app:/app
+    depends_on:
+      - postgres
+
+  server:
+    build:
+      context: ./server  # directory to search for Dockerfile
+      dockerfile: Dockerfile.dev
+
+networks:
+  db:
+
+volumes:
+  postgres_data:
+```
+
+**Additional configuration notes:**
+
+- To use `-it` interactivity, add both of these fields to the service:
+  - `stdin_open: true` — Keep an open input connection
+  - `tty: true` — Attach this terminal
+- To override the Dockerfile `ENTRYPOINT`, specify `entrypoint` in `compose.yaml`.
+
+## Commands
+
+<Note>
+  Use `docker compose` (v2) instead of the deprecated `docker-compose` (v1).
+</Note>
+
+### List containers
+
+```bash
+docker compose ps
+```
+
+### Build or rebuild containers
+
+Builds containers **without starting** them.
+
+```bash
+docker compose build
+```
+
+### Create and start containers
+
+`up` = build/rebuild + start
+
+```bash
+docker compose up
+docker compose up --build          # rebuild images before starting
+docker compose up -d               # run in background
+docker compose -f <compose-file> up
+docker compose up <service1> <service2>  # start specific services only
+```
+
+### Execute a command in a running service
+
+By default, allocates a **TTY** so you get an interactive prompt immediately.
+
+```bash
+docker compose exec <service-name> <command>
+docker compose exec apiservice bash
+```
+
+### Display service log output
+
+```bash
+docker compose logs
+```
+
+### Stop services
+
+Stops running containers **without removing** them. Restart with `docker compose start`.
+
+```bash
+docker compose stop
+```
+
+### Stop and remove containers and networks
+
+```bash
+docker compose down
+```

@@ -1,0 +1,150 @@
+---
+title: Namespace
+description: Learn about Kubernetes Namespaces for isolating resources, managing access, and setting resource quotas within a cluster.
+---
+
+## What is a Namespace?
+
+A Namespace is used to **isolate resources** within a single cluster. Each namespace can have its own **policies, permissions (RBAC), and resource controls**. In other words, it is used to **isolate users' accessibility**.
+
+By default, Kubernetes creates 4 namespaces:
+
+| Namespace | Description |
+| --- | --- |
+| `default` | The namespace you can deploy to **without creating** a new namespace when starting a new cluster. |
+| `kube-system` | Namespace for **objects created by the Kubernetes system** (kube-dns, kube-proxy, kubernetes-dashboard, etc.). |
+| `kube-public` | Contains **resources readable publicly** by all users without authentication. Mainly reserved for cluster usage. |
+| `kube-node-lease` | Holds **Lease objects** associated with each node. Node leases allow kubelet to **send heartbeats** so the control plane can detect node failure. |
+
+## Commands
+
+```bash
+kubectl get <resource> -n <namespace-name>
+kubectl get <resource> --namespace=<namespace-name>
+kubectl get <resource> --all-namespaces
+
+# Example
+kubectl get pods -n dev
+
+# Create a namespace
+kubectl create namespace dev
+```
+
+## Switch Namespace Permanently
+
+To **switch to another namespace permanently** (so you don't have to specify it each time):
+
+```bash
+kubectl config set-context $(kubectl config current-context) --namespace=<namespace-name>
+
+kubectl get <resource>  # defaults to your namespace
+```
+
+<Note>
+  A **context** is a set of access parameters that define a **cluster**, **namespace**, and **user** in Kubernetes. Contexts are stored in the `kubeconfig` YAML file and are used to **manage multiple clusters or environments** from the same system.
+</Note>
+
+## Namespace YAML
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+```
+
+## Using a Namespace in Resource YAML
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sample-nginx-pod
+  namespace: dev
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+```
+
+## Connecting to Services in Other Namespaces
+
+To connect to a service in another namespace, reference its **DNS entry** (automatically added when the service is created):
+
+```
+Format:  <service-name>.<namespace>.svc.cluster.local
+Example: db-svc.prod.svc.cluster.local
+```
+
+- `cluster.local` is the **default domain name** of the Kubernetes cluster.
+
+## Resource Quota for a Namespace
+
+You can **limit the total resources** used within a namespace.
+
+- **Scope:** Applies to an entire namespace
+- **Purpose:** Enforces overall resource usage limits for all pods
+- **Usage:** Ensures total consumption (CPU, memory, number of pods) does not exceed specified limits
+
+```yaml title="resource-quota.yaml"
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: team-a-quota
+  namespace: dev
+spec:
+  hard:
+    pods: "15"             # Total pods cannot exceed 15
+    requests.cpu: "2"      # Total CPU requests cannot exceed 2 cores
+    requests.memory: 2Gi   # Total memory requests cannot exceed 2Gi
+    limits.cpu: "4"        # Total CPU limits cannot exceed 4 cores
+    limits.memory: 4Gi     # Total memory limits cannot exceed 4Gi
+```
+
+```bash
+kubectl get quota -n dev
+kubectl describe quota team-a-quota -n dev
+```
+
+## Limit Range for a Namespace
+
+<Warning>
+  The max and min values in a LimitRange apply to **both resource requests and limits**.
+</Warning>
+
+You can set default **minimum and maximum** limits for CPU and memory for pods in a namespace. If you create or change a LimitRange, it will **not affect existing pods**.
+
+- **Scope:** Applies to individual containers or pods within a namespace
+- **Purpose:** Sets default, minimum, and maximum resource usage limits
+- **Usage:** Ensures each container or pod has resource requests and limits within specified bounds
+
+```yaml title="cpu-limit-range.yaml"
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cpe-resource-constraint
+spec:
+  limits:
+    - default:          # Default limits for containers
+        cpu: 500m
+        memory: 512Mi
+      defaultRequest:   # Default requests for containers
+        cpu: 500m
+        memory: 512Mi
+      max:              # Maximum allowed
+        cpu: "1"
+        memory: 1Gi
+      min:              # Minimum allowed
+        cpu: 100m
+        memory: 256Mi
+      type: Container
+```
+
+**Example scenarios:**
+
+| Configuration | Result |
+| --- | --- |
+| No resources specified | Container gets 500m CPU and 512Mi memory (defaults). |
+| Explicitly set 200m CPU and 300Mi memory | Valid — within min/max range. |
+| Explicitly set 50m CPU and 200Mi memory | **Fails** — below the min values. |
+| Explicitly set 2 CPU and 2Gi memory | **Fails** — exceeds the max values. |

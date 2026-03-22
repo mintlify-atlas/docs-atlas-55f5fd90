@@ -1,0 +1,27 @@
+---
+title: Task Aliases
+description: Create shorter or more intuitive aliases for tasks to simplify command execution.
+---
+
+<Note>
+  For namespace aliases when including Taskfiles, see [Namespace Aliases](/docs/taskfile/include-other-taskfile#namespace-aliases-shortform).
+</Note>
+
+You can create **aliases for tasks** to simplify command execution. This lets you define shorter or more intuitive names without renaming the task itself.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+tasks:
+  complex-task-name:
+    aliases: [complex]
+    cmds:
+      - echo "This is a complex task name"
+```
+
+You can now run either:
+
+```bash
+task complex-task-name
+# or
+task complex
+```

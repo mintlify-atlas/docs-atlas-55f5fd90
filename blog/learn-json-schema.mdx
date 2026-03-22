@@ -1,0 +1,167 @@
+---
+title: JSON Schema
+description: Learn how to use JSON Schema to validate and document JSON data structures, including nested objects, constraints, and external schema references.
+---
+
+## What is JSON Schema?
+
+JSON Schema is a **vocabulary** that allows you to **annotate** and **validate JSON documents**. It defines the **structure** and **constraints** of JSON data, making it straightforward to ensure data adheres to specific formats and rules.
+
+<Note>
+  Useful references:
+  - [json-schema.org](https://json-schema.org/) — official specification
+  - [jsonschemavalidator.net](https://www.jsonschemavalidator.net/) — online validator
+</Note>
+
+## Create a Schema
+
+Start with a simple JSON object:
+
+```json title="student.json"
+{
+  "name": "John",
+  "age": 30,
+  "isStudent": false,
+  "courses": ["Math", "Science", "History"]
+}
+```
+
+To validate this data, create a corresponding JSON Schema. Key top-level keywords:
+
+- `$schema` — the JSON Schema version/standard being used
+- `$id` — a URI that uniquely identifies this schema
+- `title` / `description` — human-readable metadata
+- `type` — defines the top-level data type constraint
+- `properties` — describes the expected fields
+- `required` — lists fields that must be present
+
+```json title="student-schema.json"
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/karchunt/json-schema-examples/student-schema.json",
+  "title": "Student",
+  "description": "A schema for student data",
+  "type": "object",
+  "properties": {
+    "name": {
+      "description": "The name of the student",
+      "type": "string"
+    },
+    "age": {
+      "description": "The age of the student",
+      "type": "integer",
+      "exclusiveMinimum": 0
+    },
+    "isStudent": {
+      "description": "Indicates if the person is a student",
+      "type": "boolean"
+    },
+    "courses": {
+      "description": "List of courses the student is enrolled in",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  },
+  "required": ["name", "age", "isStudent"]
+}
+```
+
+Notable constraint keywords used above:
+
+- `exclusiveMinimum` — value must be **strictly greater than** the specified number
+- `required` — these properties must be present in the JSON object
+- `minItems` — the array must contain at least this many items
+- `uniqueItems` — all array items must be unique
+
+## Nested Data Structures
+
+JSON data often contains nested objects. Extend the schema to include a `address` sub-object:
+
+```json title="student-schema.json"
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/karchunt/json-schema-examples/student-schema.json",
+  "title": "Student",
+  "description": "A schema for student data",
+  "type": "object",
+  "properties": {
+    "name": { "description": "The name of the student", "type": "string" },
+    "age": {
+      "description": "The age of the student",
+      "type": "integer",
+      "exclusiveMinimum": 0
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": { "description": "The street address", "type": "string" },
+        "city": { "description": "The city of the address", "type": "string" },
+        "zipCode": { "description": "The postal code", "type": "string" },
+        "country": { "description": "The country of the address", "type": "string" }
+      },
+      "required": ["street", "city", "zipCode"]
+    },
+    "isStudent": { "description": "Indicates if the person is a student", "type": "boolean" },
+    "courses": {
+      "description": "List of courses the student is enrolled in",
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  },
+  "required": ["name", "age", "isStudent"]
+}
+```
+
+## Using External Schemas
+
+You can keep schemas modular by splitting them into separate files and referencing them with `$ref`.
+
+```json title="external-schema.json"
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/karchunt/json-schema-examples/external-schema.json",
+  "title": "External",
+  "description": "External schema example",
+  "type": "object",
+  "properties": {
+    "example": { "description": "Example", "type": "string" }
+  }
+}
+```
+
+Reference it inside your main schema using `$ref`:
+
+```json title="student-schema.json"
+{
+  "properties": {
+    "externalData": {
+      "description": "External data reference",
+      "$ref": "https://github.com/karchunt/json-schema-examples/external-schema.json"
+    }
+  }
+}
+```
+
+## Reference a Schema in JSON Data
+
+To associate a JSON file with its schema, add the `$schema` keyword at the top of the JSON document:
+
+```json title="student.json"
+{
+  "$schema": "./student-schema.json",
+  "name": "John",
+  "age": 30,
+  "isStudent": false,
+  "courses": ["Math", "Science", "History"]
+}
+```
+
+<Tip>
+  You can use a local relative path (e.g. `./student-schema.json`) or the full hosted URL for the `$schema` value. Many editors like VS Code use this reference to provide real-time validation and autocomplete.
+</Tip>

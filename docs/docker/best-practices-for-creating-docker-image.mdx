@@ -1,0 +1,171 @@
+---
+title: Best Practices for Creating a Docker Image
+description: Follow these best practices to build secure, lean, and maintainable Docker images for production use.
+---
+
+## Base vs Parent vs Custom Image
+
+<Note>
+  Understanding the difference between **base image**, **parent image**, and **custom image** is essential before diving into best practices.
+</Note>
+
+```
+scratch → Base Image (ubuntu:22.04) → Parent Image (myparent) → Custom Image
+```
+
+**Base image** — Built from `scratch` (the empty Docker image):
+
+```dockerfile
+# Dockerfile for ubuntu:22.04 (base image)
+FROM scratch
+ADD 433cf0b8353e08be3a6582ad5947c57a66bdbb842ed3095246a1ff6876d157f1 /
+CMD ["bash"]
+```
+
+**Parent image** — Built from a base image:
+
+```dockerfile
+# Dockerfile for mypythonparent (parent image)
+FROM ubuntu:22.04
+WORKDIR /app
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip && \
+    pip3 install -r /app/requirements.txt && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+CMD ["bash"]
+```
+
+**Custom image** — Built from a parent image:
+
+```dockerfile
+# Dockerfile for mycustomimage (custom image)
+FROM mypythonparent
+
+COPY . /app
+
+ENV APP_ENV=production \
+    APP_PORT=8080
+
+EXPOSE 8080
+
+CMD ["python3", "/app/main.py"]
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="One application per image">
+    Each image should be **focused on a single application or service**. For example, create separate images for a web server and a database.
+
+    This enables **better scalability**, **maintainability**, and **reusability**, while also reducing image size by including only the necessary dependencies.
+  </Accordion>
+
+  <Accordion title="Do not store data or state in containers">
+    Containers are **ephemeral** — they can be created and destroyed at any time. Data stored inside a container is lost when the container is removed.
+
+    Use **Docker volumes** or **external storage solutions** (e.g., Redis, PostgreSQL) to persist data outside of the container.
+  </Accordion>
+
+  <Accordion title="Keep images updated">
+    Regularly **update your images and dependencies** to include the latest security patches. Stale base images are a common source of vulnerabilities.
+  </Accordion>
+
+  <Accordion title="Scan images for vulnerabilities">
+    Regularly scan images using `docker scan` or third-party tools like **[Trivy](https://github.com/aquasecurity/trivy)** to detect known vulnerabilities before deployment.
+  </Accordion>
+
+  <Accordion title="Avoid installing unnecessary packages">
+    Only install the dependencies **required for your application**. Remove build tools and temporary files after installation to keep the image lean.
+
+    ```dockerfile
+    RUN apt-get update && apt-get install -y \
+      curl && \
+      apt-get clean && rm -rf /var/lib/apt/lists/*
+    ```
+  </Accordion>
+
+  <Accordion title="Use a .dockerignore file">
+    Exclude unnecessary files and directories from the build context to **reduce image size** and **speed up builds**.
+
+    ```text
+    node_modules
+    .git
+    *.log
+    ```
+  </Accordion>
+
+  <Accordion title="Leverage multi-stage builds">
+    Use **multi-stage builds** to separate the build environment from the runtime environment. This ensures only necessary files end up in the final image, improving both size and security.
+
+    ```dockerfile
+    # Stage 1: Build
+    FROM golang:1.20 AS builder
+    WORKDIR /app
+    COPY . .
+    RUN go build -o main .
+
+    # Stage 2: Runtime
+    FROM alpine:latest
+    WORKDIR /app
+    COPY --from=builder /app/main .
+    CMD ["./main"]
+    ```
+  </Accordion>
+
+  <Accordion title="Optimize layers">
+    Combine `RUN`, `COPY`, and `ADD` commands where possible to **minimize the number of layers** and reduce image size — but keep readability in mind.
+
+    ```dockerfile
+    RUN apt-get update && apt-get install -y curl && \
+      apt-get clean && rm -rf /var/lib/apt/lists/*
+    ```
+  </Accordion>
+
+  <Accordion title="Use explicit tags for base images">
+    Always use **specific version tags** (e.g., `ubuntu:22.04`) instead of `latest` to ensure **consistent builds** and avoid unexpected breaking changes.
+  </Accordion>
+
+  <Accordion title="Use a non-root user">
+    Avoid running your application as the **root user**. Create a dedicated non-root user to reduce the attack surface.
+
+    ```dockerfile
+    RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+    USER appuser
+    ```
+  </Accordion>
+
+  <Accordion title="Document the image with labels">
+    Use `LABEL` to record metadata such as maintainer, version, and description. This helps CI/CD pipelines, compliance tracking, and discoverability in registries.
+
+    ```dockerfile
+    LABEL maintainer="karchunt"
+    LABEL version="1.0.0"
+    LABEL description="A custom Docker image for my application"
+    ```
+  </Accordion>
+
+  <Accordion title="Verify image authenticity">
+    Use **official images** or **verified publisher tags** from Docker Hub or trusted registries.
+
+    Enable **Docker Content Trust (DCT)** to ensure images are signed and verified:
+
+    ```bash
+    export DOCKER_CONTENT_TRUST=1
+    ```
+  </Accordion>
+
+  <Accordion title="Use minimal or slim base images">
+    Start with a minimal base image like `alpine` or `debian-slim` to reduce the image size and attack surface. Only install what is strictly necessary.
+  </Accordion>
+
+  <Accordion title="Use distroless images for production">
+    **Distroless images** contain only the application and its runtime dependencies — no package manager, shell, network tools, or text editors. This minimizes the attack surface significantly.
+
+    Examples:
+    - `gcr.io/distroless/python3-debian12`
+    - `gcr.io/distroless/base-debian12`
+
+    See the full list at [GoogleContainerTools/distroless](https://github.com/GoogleContainerTools/distroless).
+  </Accordion>
+</AccordionGroup>

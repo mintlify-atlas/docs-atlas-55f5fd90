@@ -1,0 +1,86 @@
+---
+title: Volume
+description: Persist and share container data using Docker volumes, bind mounts, and read-only volumes.
+---
+
+<Info>
+  All volumes are stored in `/var/lib/docker/volumes` and are mounted as **read-write** by default.
+</Info>
+
+Docker volume is used to **persist** and **share** container data across containers. Folders on your host machine's hard drive are **mounted** into containers as volumes, allowing the container to write data into the host volumes.
+
+## Volume Types
+
+<Tabs>
+  <Tab title="Anonymous Volumes">
+    Anonymous volumes **only exist as long as the container exists**. They are automatically created and removed with the container. Bind mounts can prevent certain files from being overlapped.
+
+    ```bash
+    docker run -v /app/logs <image>
+    ```
+  </Tab>
+  <Tab title="Named Volumes">
+    Named volumes **persist even if you stop or remove the container**. You cannot directly edit data inside a named volume — use bind mounts for that purpose.
+
+    ```bash
+    docker run -v mylog:/app/logs apiapp
+    docker run --mount source=mylog,destination=/app/logs apiapp
+    ```
+  </Tab>
+  <Tab title="Bind Mounts">
+    Bind mounts allow you to **reflect code changes from local to container** in real time. They are ideal for development but not recommended for production since environments may have different folder structures.
+
+    <Warning>
+      The source and destination paths must be **absolute paths**:
+      - macOS / Linux: `$(pwd):/app`
+      - Windows: `"%cd%":/app`
+    </Warning>
+
+    ```bash
+    docker run -v <local-path>:<container-path> <image>
+    docker run --mount type=bind,source=<local-path>,destination=<container-path> <image>
+
+    # Examples
+    docker run -v /app/api:/app/api myapi
+    docker run --mount type=bind,source=/app/api,destination=/app/api myapi
+    ```
+  </Tab>
+  <Tab title="Read-Only Volumes">
+    Read-only volumes **prevent local files from being modified** by changes made inside the container.
+
+    ```bash
+    docker run --mount type=bind,source=/root/logs,target=/api/logs,readonly myapi
+    docker run -v "/root/logs:/api/logs:ro" myapi
+    ```
+
+    The `readonly` flag and `:ro` suffix indicate that this volume is for reading only.
+  </Tab>
+</Tabs>
+
+## Volume Operations
+
+### List volumes
+
+```bash
+docker volume ls
+```
+
+### Create a volume
+
+```bash
+docker volume create <volume-name>
+```
+
+### Inspect a volume
+
+```bash
+docker volume inspect <volume-name>
+```
+
+### Remove a volume
+
+```bash
+docker volume rm <volume-name>
+docker volume remove <volume-name>
+docker volume prune  # remove all unused volumes
+```

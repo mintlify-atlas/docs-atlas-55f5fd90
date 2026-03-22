@@ -1,0 +1,28 @@
+---
+title: Reflog
+description: Learn how to use git reflog to view the full history of HEAD movements and recover from mistakes.
+---
+
+## Git reflog
+
+The `git reflog` command shows a log of **all actions taken on your repository** — including checkouts, resets, merges, and rebases — not just commits. This makes it an invaluable recovery tool.
+
+Everyone makes mistakes. If you accidentally reset to the wrong commit or lose work, `git reflog` lets you see the exact commit hash before the mistake and restore to it.
+
+```bash
+git reflog
+```
+
+The output lists recent HEAD positions with their commit hashes. Once you identify the commit you want to return to, reset to it:
+
+```bash
+git reset --hard <commit-id>
+```
+
+<Tip>
+  `git reflog` is your safety net. Even after a `git reset --hard`, the original commits are still accessible via reflog for a period of time (by default, 90 days).
+</Tip>
+
+<Info>
+  Reflog is local — it tracks actions on your machine only and is not shared with the remote repository.
+</Info>

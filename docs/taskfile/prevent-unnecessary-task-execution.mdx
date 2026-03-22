@@ -1,0 +1,221 @@
+---
+title: Prevent Unnecessary Task Execution
+description: Use sources, generates, status checks, and preconditions to skip tasks that don't need to run.
+---
+
+## Fingerprinting Source and Generated Files
+
+Avoid unnecessary work by only running tasks **when their source files have changed**. Taskfile compares checksums of `sources` files to detect changes.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+
+tasks:
+  # Runs npm install only when package.json changes
+  # If package-lock.json is deleted, task won't re-run (no generates)
+  npm:install:without-generates:
+    cmds:
+      - npm install
+    sources:
+      - package.json
+
+  # If package-lock.json is deleted, task WILL re-run
+  npm:install:
+    cmds:
+      - npm install
+    sources:
+      - package.json
+    generates:
+      - package-lock.json
+
+  npm:build:
+    cmds:
+      - npm run build
+    sources:
+      - '**/*.js'
+      - exclude: ignore.js
+
+  python_build:
+    cmds:
+      - python3 -m build
+    sources:
+      - setup.py
+      - '**/*.py'
+      - exclude: tests/**
+    generates:
+      - dist/*.whl
+    method: timestamp
+```
+
+**Key fields:**
+
+| Field | Description |
+| ----- | ----------- |
+| `sources` | Files to fingerprint. Task only runs if they've changed. Supports glob patterns. |
+| `generates` | Files produced by the task. If deleted, task re-runs. |
+| `exclude` | Exclude files from fingerprinting (must follow a positive glob). |
+| `method: checksum` | Default. Compares file checksums. |
+| `method: timestamp` | Compares file modification times. Faster for large files. |
+| `method: none` | Skips validation — task always runs. |
+
+```bash title="Demo and Output"
+ubuntu@touted-mite:~/nodejsfun$ task npm:install
+task: [npm:install] npm install
+...
+up to date, audited 62 packages in 723ms
+
+# Second run — no changes in package.json
+ubuntu@touted-mite:~/nodejsfun$ task npm:install
+task: Task "npm:install" is up to date
+```
+
+<Note>
+  A `.task` directory is created in the source directory to store fingerprint data. Add it to `.gitignore` to avoid committing it.
+
+  To customize its location: `export TASK_TEMP_DIR=/path/to/custom/.task`
+</Note>
+
+## Programmatic Status Checks
+
+<Tip>
+  Use `task --status <task>` to check whether a task is considered up to date.
+</Tip>
+
+Use the `status` field to define shell commands that indicate whether a task is **up to date**. If all status commands exit with code 0, the task is skipped.
+
+1. On the **first run**, status checks fail (files don't exist), so commands execute.
+2. On **subsequent runs**, status checks pass, so the task is skipped.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+
+tasks:
+  generate-files:
+    cmds:
+      - mkdir directory
+      - touch directory/file1.txt
+      - touch directory/file2.txt
+    status:
+      - test -d directory
+      - test -f directory/file1.txt
+      - test -f directory/file2.txt
+```
+
+```bash title="Demo and Output"
+ubuntu@touted-mite:~$ task generate-files
+task: [generate-files] mkdir directory
+task: [generate-files] touch directory/file1.txt
+task: [generate-files] touch directory/file2.txt
+
+ubuntu@touted-mite:~$ task generate-files
+task: Task "generate-files" is up to date
+```
+
+### Combining `sources` and `status`
+
+When both are used, the task runs if **either** the sources change **or** a status check fails:
+
+```yaml title="Taskfile.yaml"
+version: '3'
+
+tasks:
+  npm:install:
+    cmds:
+      - npm install
+    sources:
+      - package.json
+    status:
+      - test -f package-lock.json
+```
+
+## Precondition Checks
+
+Use `preconditions` to run checks **before** the task and its dependencies execute. If any precondition fails, the **task and all its dependencies are canceled**.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+tasks:
+  generate-files:
+    cmds:
+      - mkdir directory
+    preconditions:
+      - test -f .env
+      - sh: '[ 1 = 0 ]'
+        msg: "This will not run because the condition is false"
+```
+
+```yaml title="Taskfile.yaml — dependency cancellation example"
+version: '3'
+
+tasks:
+  task-will-fail:
+    preconditions:
+      - sh: 'exit 1'
+
+  task-will-also-fail:
+    deps:
+      - task-will-fail
+
+  task-will-still-fail:
+    cmds:
+      - task: task-will-fail
+      - echo "I will not run"
+```
+
+### `status` vs `preconditions`
+
+| Feature | `status` | `preconditions` |
+| --- | --- | --- |
+| Purpose | Check if task is up to date | Ensure requirements are met before running |
+| Effect on Task | Skips task if up to date; dependent tasks continue | Fails task and cancels all dependent tasks |
+
+## Limiting When Tasks Run
+
+<Note>
+  `run` can also be set at the **root level** of the Taskfile to apply to all tasks unless overridden individually.
+</Note>
+
+Use the `run` field to control how often a task executes when called multiple times:
+
+| Value | Behavior |
+| ----- | -------- |
+| `always` | Default. Runs every time it is called. |
+| `once` | Runs only once, regardless of how many times it's called. |
+| `when_changed` | Runs once per unique set of input variables. |
+
+```yaml title="Taskfile.yaml"
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - task: generate-file
+        vars: { CONTENT: '1' }
+      - task: generate-file
+        vars: { CONTENT: '2' }
+      - task: generate-file
+        vars: { CONTENT: '2' }
+
+  generate-file:
+    run: when_changed
+    deps:
+      - install-deps
+    cmds:
+      - echo {{.CONTENT}}
+
+  install-deps:
+    run: once
+    cmds:
+      - sleep 5 # simulates a long operation
+```
+
+```bash title="Demo and Output"
+ubuntu@touted-mite:~$ task default
+task: [install-deps] sleep 5
+task: [generate-file] echo 1
+1
+task: [generate-file] echo 2
+2
+```
+
+`install-deps` runs only once even though it is a dependency of `generate-file` called three times. `generate-file` with `CONTENT: '2'` runs only once because `when_changed` deduplicates identical variable sets.

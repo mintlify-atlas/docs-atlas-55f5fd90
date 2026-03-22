@@ -1,0 +1,25 @@
+---
+title: Fix Git LFS Pointers Issue
+description: Learn how to fix Git LFS pointer issues by re-importing files and pushing them to the remote repository.
+---
+
+If Git LFS pointers are not being tracked correctly, you can re-import the affected files and push them.
+
+## Steps to Fix
+
+```bash
+git lfs migrate import --no-rewrite "file_path" "file_path"
+git lfs ls-files | grep "file_path"
+git lfs push origin --all
+git push origin --all
+```
+
+## What Each Command Does
+
+1. **`git lfs migrate import --no-rewrite`** — Reimports the specified files into LFS as pointer files, without rewriting the commit history. You can include as many `file_path` arguments as needed.
+
+2. **`git lfs ls-files | grep "file_path"`** — Verifies that the specified file has been successfully registered as a Git LFS pointer.
+
+3. **`git lfs push origin --all`** — Pushes all LFS objects to the remote repository.
+
+4. **`git push origin --all`** — Pushes all branch commits (including the updated LFS pointer references) to the remote repository.

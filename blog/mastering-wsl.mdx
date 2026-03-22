@@ -1,0 +1,173 @@
+---
+title: Mastering Windows Subsystem for Linux (WSL)
+description: A comprehensive guide to mastering WSL, including installation, configuration, management commands, file system access, and the .wslconfig file.
+---
+
+Windows Subsystem for Linux (WSL) allows developers to **run a Linux environment directly on Windows**, **without the overhead** of a traditional virtual machine or dual-boot setup.
+
+There are two versions of WSL:
+
+- **WSL 1**: A compatibility layer that translates Linux syscalls to Windows ones.
+- **WSL 2**: A full Linux kernel running in a lightweight VM, offering better performance, full system call compatibility, and full Docker support.
+
+<Tip>
+  Use **WSL 2** for most use cases — it is the default version when installing WSL and offers significantly improved performance and compatibility.
+</Tip>
+
+## Installation & Setup
+
+Ensure your **Windows 10 version is 2004 or higher** (Build 19041+) or you're using **Windows 11**. For older systems, refer to the [manual installation docs](https://learn.microsoft.com/en-us/windows/wsl/install-manual).
+
+<Steps>
+  ### Enable WSL
+
+  Open PowerShell in **Administrator mode** and run:
+
+  ```powershell
+  wsl --install
+  wsl --install -d <Distro>  # To install a specific distribution
+  ```
+
+  This command:
+  - Enables the **"Windows Subsystem for Linux"** optional feature
+  - Enables the **"Virtual Machine Platform"** optional feature
+  - Downloads and installs the **Ubuntu** Linux distribution by default
+  - **Sets WSL 2** as the default version
+
+  ### Restart your computer (if needed)
+
+  In most cases, no restart is required. However, if `wsl --install` fails, manually enable the features via **Start Menu > "Turn Windows features on or off"**:
+
+  - Windows Subsystem for Linux
+  - Virtual Machine Platform
+
+  Then restart your computer to apply the changes.
+
+  ### Complete the initial Linux setup
+
+  After completing the steps above, a new **Ubuntu** application will appear in your Start Menu. Launch it — setup takes a few minutes.
+
+  You will be prompted to create a **UNIX username** and **password**. This user account is separate from your Windows account and will have `sudo` privileges.
+
+  <Warning>
+    Remember the password you set, as you will need it for `sudo` commands.
+  </Warning>
+
+  ```powershell title="terminal"
+  PS C:\Users\karchunt> wsl --install
+  Downloading: Ubuntu
+  Installing: Ubuntu
+  Distribution successfully installed. It can be launched via 'wsl.exe -d Ubuntu'
+  Launching Ubuntu...
+  Provisioning the new WSL instance Ubuntu
+  This might take a while...
+  Create a default Unix user account: karchunt
+  New password:
+  Retype new password:
+  passwd: password updated successfully
+
+  karchunt@DESKTOP-CCAQ09F:/mnt/c/Users/karchunt$
+  ```
+</Steps>
+
+## Basic WSL Management Commands
+
+### List available Linux distributions
+
+```powershell
+wsl -l -o
+wsl --list --online
+```
+
+### List installed Linux distributions
+
+```powershell
+wsl -l -v
+wsl --list --verbose
+```
+
+Sample output:
+
+```powershell title="terminal"
+PS C:\Users\karchunt> wsl -l -v
+  NAME              STATE           VERSION
+* Ubuntu-24.04      Stopped         2
+  Ubuntu            Stopped         2
+  docker-desktop    Stopped         2
+```
+
+### Change the WSL version for a distribution
+
+```powershell
+wsl --set-version <distribution-name> <wsl-version>
+wsl --set-version Ubuntu-24.04 2
+```
+
+### Set WSL 2 as the default version
+
+```powershell
+wsl --set-default-version 2
+```
+
+### Set the default Linux distribution
+
+```powershell
+wsl --set-default <distribution-name>
+wsl --set-default Ubuntu-24.04
+```
+
+### Terminate a running distribution
+
+```powershell
+wsl --terminate <distribution-name>
+```
+
+### Shut down all WSL distributions
+
+```powershell
+wsl --shutdown
+```
+
+## Core WSL Usage & File System
+
+### Accessing Windows files from WSL
+
+WSL **automatically mounts your Windows drives** under `/mnt`. Your `C:` drive is accessible at `/mnt/c`.
+
+```bash
+# Navigate to your Windows user directory from WSL
+cd /mnt/c/Users/karchunt
+```
+
+Or use WSL commands from Windows:
+
+```powershell
+wsl ls -la /mnt/c/Users/karchunt
+wsl pwd
+```
+
+### Running Windows executables from WSL
+
+```bash
+notepad.exe <file>
+explorer.exe <path>
+```
+
+## WSL Configuration (.wslconfig)
+
+Configure global WSL settings using a `.wslconfig` file located at `C:\Users\<YourUsername>\.wslconfig`.
+
+```ini title=".wslconfig"
+[wsl2]
+memory=4GB       # Limits VM memory to 4 GB
+processors=2     # Limits VM to 2 processors
+swap=2GB         # Sets swap file size to 2 GB
+swapFile=C:\\temp\\wsl_swap.vhdx  # Custom swap file location
+localhostForwarding=true          # Enables localhost forwarding
+```
+
+After creating or modifying `.wslconfig`, shut down WSL for the changes to take effect:
+
+```powershell
+wsl --shutdown
+```

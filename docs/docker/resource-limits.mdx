@@ -1,0 +1,100 @@
+---
+title: Resource Limits
+description: Control CPU and memory resource allocation for Docker containers using cpu-shares, cpuset-cpus, cpus, memory, and memory-swap options.
+---
+
+## CPU
+
+<Info>
+  By default, each container's access to the host machine's CPU cycles is **unlimited**. Docker uses the [default Completely Fair Scheduler (CFS)](https://docs.docker.com/config/containers/resource_constraints/#configure-the-default-cfs-scheduler) but also supports the [Real-time Scheduler](https://docs.docker.com/config/containers/resource_constraints/#configure-the-real-time-scheduler).
+</Info>
+
+### CPU Shares
+
+By default, Docker assigns a CPU share of **1024** to each container. CPU shares specify how the host's total CPU resources are **proportionally shared** among containers — they are not hard limits.
+
+```bash
+docker run --cpu-shares=<amount> <image>
+
+# Example: assign 512 shares (half of the default)
+docker run --cpu-shares=512 ubuntu
+```
+
+### CPU Sets
+
+Limits a container to **specific CPUs or cores**. CPUs are numbered from 0.
+
+- `0-3` — Use the first four CPUs
+- `1,3` — Use the second and fourth CPUs
+
+```bash
+docker run --cpuset-cpus=<value> <image>
+
+# Use first and second CPU
+docker run --cpuset-cpus=0-1 ubuntu
+
+# Use second and fourth CPU
+docker run --cpuset-cpus=1,3 ubuntu
+```
+
+### CPU Count
+
+<Warning>
+  Without a CPU limit, containers can consume **all CPU resources** on the host, affecting other containers and the Docker Daemon itself.
+</Warning>
+
+Specifies the **maximum amount of available CPU** a container can use. If the host has 4 CPUs and you set `--cpus=2.5`, the container can use at most 2.5 CPUs.
+
+```bash
+docker run --cpus=<value> <image>
+
+# Example: limit to 2.5 out of 4 CPUs
+docker run --cpus=2.5 ubuntu
+```
+
+## Memory
+
+Set the **maximum amount of memory** a container can use:
+
+```bash
+docker run -m <size> <image>
+docker run --memory=<size> <image>
+
+# Example: limit to 512MB
+docker run -m 512m ubuntu
+docker run --memory=512m ubuntu
+```
+
+Supported size suffixes: `m` (megabytes), `g` (gigabytes).
+
+### Swap Space
+
+<Note>
+  **Sum of memory = `--memory` + swap space**
+
+  By default, Docker allocates the same amount as `--memory` for swap, effectively doubling the total memory available.
+</Note>
+
+Control swap space with `--memory-swap`:
+
+```bash
+# No swap space (memory-swap equals memory)
+docker run --memory=512m --memory-swap=512m ubuntu
+# Swap space = 512m - 512m = 0m
+
+# 256MB of swap space
+docker run --memory=512m --memory-swap=768m ubuntu
+# Swap space = 768m - 512m = 256m
+```
+
+### Additional Options
+
+```bash
+# Unlimited swap space
+docker run --memory=512m --memory-swap=-1 ubuntu
+
+# Soft memory reservation (activated under memory contention)
+docker run --memory=512m --memory-swap=-1 --memory-reservation=100m ubuntu
+```
+
+`--memory-reservation` sets a **soft limit** that is activated when Docker detects low memory or contention on the host. It must be set **lower than `--memory`** and does **not guarantee** the container stays under the limit — it's a best-effort reservation.

@@ -1,0 +1,68 @@
+---
+title: Fix "Running Scripts is Disabled on This System" Error for npm on Windows
+description: Learn how to fix the PowerShell execution policy error that prevents npm commands from running on Windows.
+---
+
+After installing Node.js on Windows, you might encounter this error when running `npm` commands in PowerShell:
+
+```text
+File C:\Program Files\nodejs\npm.ps1 cannot be loaded because running scripts is disabled on this system
+```
+
+This error occurs because PowerShell's execution policy is preventing the `npm.ps1` script from running. The recommended fix is to set the execution policy to `RemoteSigned` for the current user scope.
+
+<Steps>
+
+### Open PowerShell as Administrator
+
+Search for **"PowerShell"** in the Start menu, right-click **"Windows PowerShell"**, and select **"Run as administrator"**.
+
+### (Optional) Check the current execution policy
+
+```powershell
+Get-ExecutionPolicy
+```
+
+Sample output:
+
+```text
+Restricted
+```
+
+If it shows `Restricted`, the policy needs to be changed.
+
+### Set the execution policy to RemoteSigned
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+You will be prompted to confirm — type `Y` and press Enter:
+
+```text
+Execution Policy Change
+The execution policy helps protect you from scripts that you do not trust...
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"): Y
+```
+
+### (Optional) Verify the change
+
+```powershell
+Get-ExecutionPolicy -List
+```
+
+Sample output:
+
+```text
+        Scope ExecutionPolicy
+        ----- ---------------
+MachinePolicy       Undefined
+   UserPolicy       Undefined
+      Process       Undefined
+  CurrentUser    RemoteSigned
+ LocalMachine       Undefined
+```
+
+Confirm that `CurrentUser` now shows `RemoteSigned`. After completing these steps, you should be able to run npm commands without the execution policy error.
+
+</Steps>

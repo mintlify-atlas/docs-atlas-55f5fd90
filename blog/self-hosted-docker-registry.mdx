@@ -1,0 +1,116 @@
+---
+title: Self-Hosted Docker Registry
+description: Learn how to set up a self-hosted Docker registry for private image storage, including an optional web UI.
+---
+
+Self-hosting a Docker registry can provide several benefits:
+
+- **Security & Privacy**: Keep proprietary code safe within your infrastructure. Essential for compliance and integrating custom vulnerability scanning.
+- **Performance**: Drastically faster pulls on local networks, speeding up CI/CD pipelines and reducing reliance on external bandwidth.
+- **Cost Savings**: Avoid per-user fees common in SaaS solutions and manage your own storage backends (S3, local disk).
+- **Reliability**: No dependency on public registry uptime or rate limits. Perfect for air-gapped environments.
+- **Customization**: Full control over garbage collection, retention policies, and authentication integrations (LDAP, AD).
+
+## Setup Steps
+
+<Steps>
+  ### Create a `docker-compose.yml` file
+
+  We'll use the official [Docker Registry](https://hub.docker.com/_/registry) image to create a self-hosted registry.
+
+  ```yaml title="docker-compose.yml"
+  name: Registry
+
+  services:
+    registry:
+      image: registry:3
+      container_name: registry
+      ports:
+        - "5000:5000"
+      restart: unless-stopped
+      environment:
+        REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+      volumes:
+        - ./registry-data:/var/lib/registry
+  ```
+
+  ### Run the registry
+
+  Navigate to the directory containing the `docker-compose.yml` file and run:
+
+  ```bash
+  docker compose up -d
+  ```
+
+  ### Use the registry
+
+  You can now `tag`, `push`, and `pull` images from your registry.
+
+  ```bash
+  docker tag <image_name> <registry_url>/<image_name>
+  docker push <registry_url>/<image_name>
+  docker pull <registry_url>/<image_name>
+  ```
+
+  Here is an example:
+
+  ```bash
+  docker tag hello-world:latest localhost:5000/hello-world:v1
+  docker push localhost:5000/hello-world:v1
+  docker pull localhost:5000/hello-world:v1
+  ```
+
+  ### Set up the UI (Optional)
+
+  By default, the official Docker Registry image does not come with a UI. We'll use [joxit/docker-registry-ui](https://hub.docker.com/r/joxit/docker-registry-ui) to add one.
+
+  ```yaml title="docker-compose.yml"
+  name: Registry
+
+  services:
+    registry:
+      image: registry:3
+      container_name: registry
+      ports:
+        - "5000:5000"
+      restart: unless-stopped
+      environment:
+        REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+        REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin: '[http://registry-ui.example.com]'
+        REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods: '[HEAD,GET,OPTIONS,DELETE]'
+        REGISTRY_HTTP_HEADERS_Access-Control-Allow-Credentials: '[true]'
+        REGISTRY_HTTP_HEADERS_Access-Control-Allow-Headers: '[Authorization,Accept,Cache-Control]'
+        REGISTRY_HTTP_HEADERS_Access-Control-Expose-Headers: '[Docker-Content-Digest]'
+        REGISTRY_STORAGE_DELETE_ENABLED: 'true'
+      volumes:
+        - ./registry-data:/var/lib/registry
+    registry-ui:
+      image: joxit/docker-registry-ui:latest
+      container_name: registry-ui
+      ports:
+        - "5001:80"
+      restart: unless-stopped
+      environment:
+        - SINGLE_REGISTRY=true
+        - REGISTRY_TITLE=Docker Registry UI
+        - DELETE_IMAGES=true
+        - SHOW_CONTENT_DIGEST=true
+        - NGINX_PROXY_PASS_URL=http://registry:5000
+        - SHOW_CATALOG_NB_TAGS=true
+        - CATALOG_MIN_BRANCHES=1
+        - CATALOG_MAX_BRANCHES=1
+        - TAGLIST_PAGE_SIZE=100
+        - REGISTRY_SECURED=false
+        - CATALOG_ELEMENTS_LIMIT=1000
+      depends_on:
+        - registry
+  ```
+
+  Start both services:
+
+  ```bash
+  docker compose up -d
+  ```
+
+  Access the UI at `http://localhost:5001`.
+</Steps>

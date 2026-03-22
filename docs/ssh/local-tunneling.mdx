@@ -1,0 +1,81 @@
+---
+title: Local Tunneling
+description: Use SSH local port forwarding to tunnel traffic from your local machine to a remote host or private network via a secure SSH connection.
+---
+
+<Info>
+  For a deeper visual explanation, see [A Visual Guide to SSH Tunnels: Local and Remote Port Forwarding](https://iximiuz.com/en/posts/ssh-tunnels/).
+</Info>
+
+## Local Tunneling to a Server
+
+Local tunneling (local port forwarding) lets you **tunnel traffic from your local machine to a remote host** through an SSH connection. Use the `-L` flag and provide:
+
+- A **local port** to listen on
+- The **remote host** IP or hostname to forward to
+- The **remote port** to forward to
+
+```bash
+# General syntax
+ssh -f -N -L <local-port>:<remote-host-ip-address/name>:<remote-port> <username>@<host>
+
+# Example: access 10.0.0.12:80 via localhost:8080
+ssh -L 8080:10.0.0.12:80 username@host
+```
+
+After running the command above, visiting `localhost:8080` in your browser or with `curl` will serve the content hosted at `10.0.0.12:80` on the remote network.
+
+### Parameters
+
+| Parameter | Description |
+| --- | --- |
+| `-f` | Send SSH to the background before executing |
+| `-N` | Do not open a shell or execute a program on the remote side |
+| `-L` | Establish a local tunnel to the remote server |
+
+### Terminating a Background Tunnel
+
+If you used `-f` to background the SSH process, find and kill it by PID:
+
+```bash
+# Find the process by local port
+ps aux | grep <local-port>
+```
+
+Example output:
+
+```
+1001  5965  0.0  0.0  48168  1136 ?  Ss  12:28  0:00 ssh -f -N -L 8888:your_domain:80 username@remote_host
+1001  6113  0.0  0.0  13648   952 pts/2  S+  12:37  0:00 grep --colour=auto 8888
+```
+
+```bash
+# Kill the tunnel process
+kill 5965
+```
+
+## Local Tunneling — Local Network
+
+You can tunnel a service running on the **remote host's local network** to your local machine.
+
+```bash
+ssh -L 8080:localhost:8080 user@server
+```
+
+This forwards `localhost:8080` on the remote server to `localhost:8080` on your local machine.
+
+## Local Tunneling — Private Network
+
+You can also tunnel through a **bastion (jump) server** to reach a host on a private network that is not directly accessible from the internet.
+
+```bash
+# General syntax
+ssh -L <local-port>:<server-ip-address>:<server-port> <username>@<bastion-server-ip-address>
+
+# Example: reach 10.0.0.12:8080 via a bastion server
+ssh -L 8080:10.0.0.12:8080 user@bastion
+```
+
+<Tip>
+  Private network tunneling is especially useful for accessing internal services (databases, dashboards) through a bastion host without exposing them to the public internet.
+</Tip>

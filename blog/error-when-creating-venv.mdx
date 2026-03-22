@@ -1,0 +1,42 @@
+---
+title: Error When Creating venv
+description: Learn how to resolve the ensurepip error when creating a Python virtual environment.
+---
+
+When creating a virtual environment in Python, you might encounter the following error:
+
+```bash
+python -m venv venv
+```
+
+```text
+Error: Command '['/home/ubuntu/venv/bin/python', '-m', 'ensurepip', '--upgrade', '--default-pip']' returned non-zero exit status 1.
+```
+
+This error typically occurs when the `ensurepip` module fails to install `pip` in the virtual environment.
+
+## Resolution
+
+<Steps>
+
+### Check your Python version
+
+```bash
+python --version # e.g., 3.13.1
+```
+
+### Install the venv package for your Python version
+
+Replace `3.13` with your actual Python version:
+
+```bash
+sudo apt install python3.13-venv
+```
+
+### Create the virtual environment
+
+```bash
+python3.13 -m venv myenv
+```
+
+</Steps>

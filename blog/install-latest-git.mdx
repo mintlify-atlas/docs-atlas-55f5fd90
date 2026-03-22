@@ -1,0 +1,39 @@
+---
+title: Install the Latest Git
+description: Learn how to install the latest stable version of Git on Ubuntu using the official Git PPA.
+---
+
+<Info>
+  For more information, see the [PPA Git page on Launchpad](https://launchpad.net/~git-core/+archive/ubuntu/ppa).
+</Info>
+
+<Steps>
+
+### Add the Git stable PPA and install
+
+```bash
+sudo add-apt-repository ppa:git-core/ppa
+sudo apt-get update
+sudo apt-get install git
+```
+
+### Check the Git version
+
+```bash
+git --version
+```
+
+### (Optional) Configure Git
+
+```bash
+git config --global user.name "Your name"
+git config --global user.email "Your email"
+
+# enable color output
+git config --global color.ui auto
+
+# check configuration
+git config --global --list
+```
+
+</Steps>

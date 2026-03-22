@@ -1,0 +1,76 @@
+---
+title: Check Ubuntu Static IP Configuration
+description: Learn how to check whether your Ubuntu system is using a static IP or DHCP, using command-line tools and the GUI.
+---
+
+To check the static IP configuration on Ubuntu, you can use command-line tools or the graphical user interface (GUI).
+
+## Using `ip addr`
+
+```bash
+ip addr show
+```
+
+Look for the interface you are interested in (e.g., `eth0`, `wlan0`) and check the `inet` line for the assigned IP address.
+
+```bash
+3: wlo1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether a0:29:42:00:3c:78 brd ff:ff:ff:ff:ff:ff
+    altname wlp0s20f3
+    inet 192.168.0.20/24 brd 192.168.0.255 scope global dynamic noprefixroute wlo1
+       valid_lft 84015sec preferred_lft 84015sec
+```
+
+- **Static IP**: If the `inet` line **does not contain** the word `dynamic`, the IP address is statically assigned.
+- **DHCP (Dynamic)**: If you see `dynamic`, the IP was assigned via DHCP.
+
+## Using `ip route`
+
+```bash
+ip route list default
+```
+
+Sample output:
+
+```bash
+default via 192.168.0.1 dev wlo1 proto dhcp src 192.168.0.20 metric 600
+```
+
+- `proto dhcp` — IP was assigned via DHCP.
+- `proto static` — Static IP configuration.
+
+## Inspect Netplan Configuration
+
+```bash
+grep -E "addresses:|dhcp4: (no|false)" /etc/netplan/*.yaml
+```
+
+If you see `addresses:` with a specific IP and `dhcp4: no` or `dhcp4: false`, a static IP is configured.
+
+## Using NetworkManager CLI
+
+```bash
+nmcli con show --active
+```
+
+Check the IPv4 method for a specific connection:
+
+```bash
+nmcli -f ipv4.method con show "<Your connection name>"
+```
+
+Sample output:
+
+```bash
+ipv4.method:  auto
+```
+
+- `manual` — Static IP configuration.
+- `auto` — DHCP configuration.
+
+## GUI settings
+
+1. Open **Settings > Network** (or **Wi-Fi**).
+2. Click the **gear icon** next to your connection.
+3. Go to the **IPv4** tab.
+4. Check if **Method** is set to **Manual** (static IP) or **Automatic (DHCP)**.

@@ -1,0 +1,33 @@
+---
+title: Internal Tasks
+description: Define internal tasks that are hidden from the task list but can be called by other tasks.
+---
+
+<Note>
+  For internal includes, see [Internal Includes](/docs/taskfile/include-other-taskfile#internal-includes).
+</Note>
+
+Internal tasks are used to **define tasks that are not intended to be run directly by users**. They are useful for **organizing utility tasks** that support the main tasks of your project without cluttering the task list.
+
+Set `internal: true` on a task to hide it from the public task list:
+
+```yaml title="Taskfile.yml"
+version: '3'
+tasks:
+  secret-task:
+    internal: true
+    cmds:
+      - echo "This is a secret task"
+  public-task:
+    cmds:
+      - echo "This is a public task"
+      - task: secret-task
+```
+
+```bash title="Demo and output"
+ubuntu@touted-mite:~$ task -a
+task: Available tasks for this project:
+* public-task:
+```
+
+Only `public-task` appears in the task list. `secret-task` is hidden from users but can still be called internally by other tasks.

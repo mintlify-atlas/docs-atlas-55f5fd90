@@ -1,0 +1,220 @@
+---
+title: Looping
+description: Iterate over static lists, matrices, variables, sources, and dependencies in Taskfile using the for keyword.
+---
+
+## Loop Over a Static List
+
+Use `for` with a list to iterate over items and run a task or command for each one. The current item is available as `{{.ITEM}}`.
+
+```yaml title="Taskfile.yml"
+version: '3'
+tasks:
+  image:build:
+    vars:
+      REPOSITORY: '{{.REPOSITORY}}'
+      SRC: '{{.SRC}}'
+    cmds:
+      - docker build -t {{.REPOSITORY}}:latest {{.SRC}}
+
+  build-all:
+    cmds:
+      - for:
+          - app1
+          - app2
+        task: image:build
+        vars:
+          REPOSITORY: "{{.ITEM}}"
+          SRC: "{{.ITEM}}"
+
+  # Run different tasks based on the loop value
+  task-test:
+    cmds:
+      - echo "Running task test"
+  task-build:
+    cmds:
+      - echo "Running task build"
+  test-start:
+    cmds:
+      - for: [test, build]
+        task: task-{{ .ITEM }} # resolves to task-test, task-build
+```
+
+```bash title="Demo and output"
+ubuntu@touted-mite:~$ task build-all
+task: [image:build] docker build -t app1:latest app1
+...
+task: [image:build] docker build -t app2:latest app2
+...
+```
+
+## Loop Over a Matrix
+
+Loop over a **matrix of values** to combine multiple variables in each iteration.
+
+```yaml title="Taskfile.yml"
+version: '3'
+tasks:
+  image:build:
+    vars:
+      REPOSITORY: '{{.REPOSITORY}}'
+      SRC: '{{.SRC}}'
+      TAG: '{{.TAG}}'
+    cmds:
+      - docker build -t {{.REPOSITORY}}:{{.TAG}} {{.SRC}}
+
+  build-all:
+    cmds:
+      - for:
+          matrix:
+            REPOSITORY: [app1, app2]
+            TAG: [latest, v1.0]
+        task: image:build
+        vars:
+          REPOSITORY: "{{.ITEM.REPOSITORY}}"
+          SRC: "{{.ITEM.REPOSITORY}}"
+          TAG: "{{.ITEM.TAG}}"
+```
+
+This generates the following images:
+- `app1:latest`
+- `app1:v1.0`
+- `app2:latest`
+- `app2:v1.0`
+
+## Loop Over `sources` or `generates` Files
+
+<Tabs>
+  <Tab title="Sources">
+    ```yaml title="Taskfile.yml"
+    version: '3'
+    tasks:
+      default:
+        sources:
+          - foo.txt
+          - bar.txt
+        cmds:
+          - for: sources
+            cmd: cat {{ .ITEM }}
+    ```
+  </Tab>
+  <Tab title="Generates">
+    ```yaml title="Taskfile.yml"
+    version: '3'
+    tasks:
+      default:
+        generates:
+          - foo.txt
+          - bar.txt
+        cmds:
+          - for: generates
+            cmd: cat {{ .ITEM }}
+    ```
+  </Tab>
+</Tabs>
+
+## Loop Over Variables
+
+```yaml title="Taskfile.yml"
+version: '3'
+tasks:
+  loop1: # loop over a single variable (splits on whitespace)
+    vars:
+      MY_VAR: hello world
+    cmds:
+      - for: { var: MY_VAR }
+        cmd: echo {{ .ITEM }}
+
+  loop2: # split on a custom delimiter
+    vars:
+      MY_VAR: hello,world
+    cmds:
+      - for: { var: MY_VAR, split: ','}
+        cmd: echo {{ .ITEM }}
+
+  loop3: # loop over a list variable
+    vars:
+      LIST: [hello, world]
+    cmds:
+      - for:
+          var: LIST
+        cmd: echo {{ .ITEM }}
+
+  loop4: # loop over a map — KEY holds the key, ITEM the value
+    vars:
+      MY_MAP:
+        map:
+          key1: hello
+          key2: world
+    cmds:
+      - for:
+          var: MY_MAP
+        cmd: echo {{.KEY}} {{ .ITEM }}
+
+  loop5: # loop with dynamic variable from shell
+    vars:
+      MY_VAR:
+        sh: find -type f -name '*.txt'
+    cmds:
+      - for: { var: MY_VAR }
+        cmd: echo {{ .ITEM }}
+```
+
+```bash title="Demo and output"
+ubuntu@touted-mite:~$ task loop1 loop2 loop3 loop4
+task: [loop1] echo hello
+hello
+task: [loop1] echo world
+world
+task: [loop2] echo hello
+hello
+task: [loop2] echo world
+world
+task: [loop3] echo hello
+hello
+task: [loop3] echo world
+world
+task: [loop4] echo hello key1
+hello key1
+task: [loop4] echo world key2
+world key2
+```
+
+## Rename Loop Variables with `as`
+
+Rename the loop variable using the `as` keyword for more readable commands.
+
+```yaml title="Taskfile.yml"
+version: '3'
+tasks:
+  loop-rename:
+    vars:
+      LIST: [hello, world]
+    cmds:
+      - for:
+          var: LIST
+          as: MESSAGE
+        cmd: echo {{ .MESSAGE }}
+```
+
+## Loop Over Dependencies
+
+<Note>
+  `deps` run in parallel, so **iterations are not guaranteed to run in order**.
+</Note>
+
+```yaml title="Taskfile.yml"
+version: '3'
+
+tasks:
+  default:
+    deps:
+      - for: [foo, bar]
+        task: my-task
+        vars:
+          FILE: '{{.ITEM}}'
+
+  my-task:
+    cmds:
+      - echo '{{.FILE}}'
+```

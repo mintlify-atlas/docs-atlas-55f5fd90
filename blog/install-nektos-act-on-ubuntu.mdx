@@ -1,0 +1,20 @@
+---
+title: Install Nektos Act on Ubuntu
+description: Learn how to install Nektos Act on Ubuntu to run GitHub Actions locally using Docker.
+---
+
+[Nektos Act](https://github.com/nektos/act) allows you to run your GitHub Actions workflows locally, which is useful for testing before pushing changes.
+
+<Warning>
+  Before you begin, you need to have **Docker** installed on your Ubuntu system, as Nektos Act relies on Docker to run GitHub Actions locally.
+</Warning>
+
+## Installation
+
+```bash
+cd /tmp
+wget https://github.com/nektos/act/releases/download/v0.2.76/act_Linux_x86_64.tar.gz
+sudo tar -xvf act_Linux_x86_64.tar.gz -C /usr/local/bin act
+
+act --version
+```

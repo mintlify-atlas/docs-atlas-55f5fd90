@@ -1,0 +1,27 @@
+---
+title: SSH Installation
+description: Install and enable the OpenSSH client and server on Linux to start using SSH connections.
+---
+
+<Info>
+  **Windows Users:** Enable WSL and SSH into Windows with Bash. See the [Get started with OpenSSH for Windows](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse?tabs=gui) guide for details.
+</Info>
+
+## Install SSH on Linux
+
+Run the following commands to install the OpenSSH client and server, then enable and start the SSH service:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y openssh-client openssh-server
+sudo systemctl enable ssh
+sudo systemctl start ssh
+
+# Either command works to check the status
+sudo systemctl status ssh
+sudo systemctl status sshd
+```
+
+<Note>
+  All SSH-related files are stored under `/home/<username>/.ssh` on your system.
+</Note>

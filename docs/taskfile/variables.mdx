@@ -1,0 +1,239 @@
+---
+title: Variables
+description: Define, reference, and manage variables in Taskfile, including dynamic variables, default values, required variables, and JSON/YAML parsing.
+---
+
+<Note>
+  **Undefined variables are valid.** If variables are not defined in the Taskfile, the configuration remains valid — they can be passed at runtime.
+
+  ```yaml title="Taskfile.yaml"
+  version: '3'
+
+  tasks:
+    hello:
+      cmds:
+        - echo "Hello {{.NAME}}"
+  ```
+
+  ```bash
+  task hello NAME=KarChunT
+  ```
+</Note>
+
+## Variable Types
+
+Taskfile supports several types of variables:
+
+- `string`
+- `bool`
+- `int`
+- `float`
+- `array`
+- `map`
+
+```yaml title="Taskfile.yaml"
+version: '3'
+
+vars: # global vars
+  GLOBAL_VAR: "I am a global variable"
+
+tasks:
+  display-variables:
+    vars:
+      STRING_VAR: "Hello"
+      BOOL_VAR: true
+      INT_VAR: 42
+      FLOAT_VAR: 3.14
+      ARRAY_VAR: [1, 2, 3]
+      MAP_VAR:
+        map:
+          key1: value1
+          key2: value2
+    cmds:
+      - 'echo String: {{.STRING_VAR}}'
+      - 'echo Bool: {{.BOOL_VAR}}'
+      - 'echo Int: {{.INT_VAR}}'
+      - 'echo Float: {{.FLOAT_VAR}}'
+      - 'echo Array: {{.ARRAY_VAR}}'
+      - 'echo {{index .ARRAY 0}}' # outputs 1
+      - 'echo Map: {{.MAP_VAR}}'
+      - 'echo Map key1: {{.MAP_VAR.key1}}'
+```
+
+## Set Default Values for Variables
+
+```yaml title="Taskfile.yaml"
+version: '3'
+tasks:
+  msg:
+    vars:
+      MESSAGE: '{{.MESSAGE | default "Hello World"}}'
+    cmds:
+      - 'echo "Message is: {{ .MESSAGE }}"'
+```
+
+```bash title="Demo and output"
+ubuntu@touted-mite:~$ task msg
+task: [msg] echo "Message is: Hello World"
+Message is: Hello World
+
+# Override the default value
+ubuntu@touted-mite:~$ task msg MESSAGE="Hi, I'm karchunt"
+task: [msg] echo "Message is: Hi, I'm karchunt"
+Message is: Hi, I'm karchunt
+```
+
+## Dynamic Variables (Shell Command Output)
+
+Use `sh` to **execute shell commands** and use their output as variable values. This is useful for dynamic data retrieval such as system info or environment variables.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+
+tasks:
+  os-version:
+    vars:
+      OS_VERSION:
+        sh: cat /etc/os-release | grep "VERSION_ID" | cut -d "=" -f2
+    cmds:
+      - echo "OS version is {{.OS_VERSION}}"
+```
+
+```bash title="Demo and output"
+ubuntu@touted-mite:~$ task os-version
+task: [os-version] echo "OS version is \"22.04\""
+OS version is 22.04
+```
+
+## Required Variables
+
+Mark variables as **required**. If they are not provided, the task will not run.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+tasks:
+  greet:
+    requires:
+      vars:
+        - NAME
+    cmds:
+      - echo "Hello {{.NAME}}"
+```
+
+```bash title="Demo and output"
+ubuntu@touted-mite:~$ task greet
+task: Task "greet" cancelled because it is missing required variables: NAME
+
+ubuntu@touted-mite:~$ task greet NAME=KarChun
+task: [greet] echo "Hello KarChun"
+Hello KarChun
+```
+
+### Restricting Variable Values with `enum`
+
+Use the `enum` field to ensure variables only accept **allowed values**.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+tasks:
+  deploy:
+    requires:
+      vars:
+        - name: ENV
+          enum: [dev, staging, prod]
+    cmds:
+      - echo "Deploy to {{.ENV}}"
+```
+
+```bash title="Demo and output"
+ubuntu@touted-mite:~$ task deploy ENV=beta
+task: Task "deploy" cancelled because it is missing required variables:
+  - ENV has an invalid value : 'beta' (allowed values : [dev staging prod])
+
+ubuntu@touted-mite:~$ task deploy ENV=dev
+task: [deploy] echo "Deploy to dev"
+Deploy to dev
+```
+
+## Referencing Other Variables
+
+When passing variables between tasks, using the **template engine** will convert typed values (like arrays) to strings. Use the `ref` keyword to pass variables by reference and preserve their type.
+
+<Warning>
+  Using `{{.FOO}}` to pass an array converts it to a string. Use `ref: .FOO` to preserve the array type.
+</Warning>
+
+```yaml title="Taskfile.yaml" — wrong approach"
+version: 3
+
+tasks:
+  foo:
+    vars:
+      FOO: [A, B, C]
+    cmds:
+      - task: bar
+        vars:
+          FOO: '{{.FOO}}' # FOO becomes a string
+  bar:
+    cmds:
+      - 'echo {{index .FOO 0}}' # outputs '91' (ASCII for '[') instead of 'A'
+```
+
+```yaml title="Taskfile.yaml — correct approach using ref"
+version: 3
+
+tasks:
+  foo:
+    vars:
+      FOO: [A, B, C]
+    cmds:
+      - task: bar
+        vars:
+          FOO:
+            ref: .FOO # preserves array type
+          BAR:
+            ref: index .FOO 1
+  bar:
+    cmds:
+      - 'echo {{index .FOO 0}}' # outputs 'A'
+      - 'echo {{.BAR}}'         # outputs 'B'
+```
+
+```bash title="Demo and Output"
+ubuntu@touted-mite:~$ task foo
+task: [bar] echo A
+A
+task: [bar] echo B
+B
+```
+
+<Note>
+  The `ref` keyword works the same way with `deps`.
+</Note>
+
+## Parsing JSON/YAML into Map Variables
+
+<Note>
+  This **only works** with the `ref` keyword, not the template engine approach.
+</Note>
+
+Use `fromJson` or `fromYaml` functions to parse JSON or YAML strings into map variables.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+
+tasks:
+  task-with-map:
+    vars:
+      JSON: '{"a": 1, "b": 2, "c": 3}'
+      FOO:
+        ref: "fromJson .JSON"
+    cmds:
+      - echo {{.FOO}}
+```
+
+```bash title="Demo and Output"
+ubuntu@touted-mite:~$ task task-with-map
+task: [task-with-map] echo map[a:1 b:2 c:3]
+map[a:1 b:2 c:3]
+```

@@ -1,0 +1,20 @@
+---
+title: Add APT Repository Unable to Support Jammy
+description: Learn how to fix the "unable to support jammy" error when adding an APT repository on Ubuntu 22.04.
+---
+
+The error **"unable to support jammy"** typically occurs when trying to add an APT repository that **does not have packages available** for the **Ubuntu Jammy (22.04)** release. This can happen if the repository maintainer has not yet provided support for this Ubuntu version.
+
+## Fix
+
+To work around this issue, copy the `apt_pkg` shared object file from the existing Python installation to a more generic name that APT can recognize:
+
+```bash
+# You may need to adjust the Python version (e.g., cpython-310) based on your system
+cd /usr/lib/python3/dist-packages
+sudo cp apt_pkg.cpython-310-x86_64-linux-gnu.so apt_pkg.so
+```
+
+<Note>
+  Check your actual Python version by running `python3 --version` and adjust the filename accordingly (e.g., `cpython-311` for Python 3.11).
+</Note>

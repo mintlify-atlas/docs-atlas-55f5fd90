@@ -1,0 +1,28 @@
+---
+title: qt.qpa.plugin Could Not Load Qt
+description: Fix the "Could not load the Qt platform plugin xcb" error that appears when using OpenCV with Qt GUI features on Linux.
+---
+
+## `qt.qpa.plugin` Could Not Load Qt
+
+When using **OpenCV with Qt on Linux**, you may encounter the following error:
+
+```text
+qt.qpa.plugin: From 6.5.0, xcb-cursor0 or libxcb-cursor0 is needed to load the Qt xcb platform plugin.
+qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "/home/kc/Desktop/projects/pretty/venv/lib/python3.11/site-packages/cv2/qt/plugins" even though it was found.
+```
+
+This application failed to start because **no Qt platform plugin could be initialized**. The error indicates that the Qt `xcb` platform plugin is **missing required native libraries** — commonly needed when OpenCV is built with Qt GUI support.
+
+### Fix
+
+Install the missing `xcb` libraries:
+
+```bash
+sudo apt update
+sudo apt install -y libxcb-cursor0 libxcb-xinerama0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0
+```
+
+<Note>
+  The exact set of required libraries can vary by Qt version and OpenCV build. If the error persists after installing the packages above, check the full error output for additional missing library names.
+</Note>

@@ -1,0 +1,91 @@
+---
+title: ReplicaSet
+description: Learn about ReplicaSet in Kubernetes, which ensures a specified number of pod replicas are always running.
+---
+
+## What is a ReplicaSet?
+
+<Info>
+  Replication Controller and ReplicaSet serve the same purpose, but ReplicaSet is the **next generation** of Replication Controller.
+</Info>
+
+A ReplicaSet **ensures a specified number of pod replicas are running** at all times. It maintains the **desired state** of the application by creating or deleting pods as needed.
+
+```
+User → Service → ReplicaSet → Pod 1
+                             → Pod 2
+```
+
+**Key features:**
+
+<CardGroup cols={3}>
+  <Card title="Self-healing" icon="heart-pulse">
+    If a pod fails, a new one is automatically created to replace it.
+  </Card>
+  <Card title="Scaling" icon="arrow-up-right">
+    Scale up or down the number of pods as needed.
+  </Card>
+  <Card title="Load Balancing" icon="scale-balanced">
+    Distribute traffic across all managed pods.
+  </Card>
+</CardGroup>
+
+## Replication Controller
+
+```yaml title="rc.yaml"
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: rc
+spec:
+  replicas: 3
+  template:
+    metadata:
+      name: pod-name
+    spec:
+      containers:
+        - name: container-name
+          image: web-server-image
+```
+
+```bash
+kubectl get replicationcontroller
+```
+
+## ReplicaSet
+
+<Warning>
+  When you edit a ReplicaSet, you will need to **delete the previously deployed pods first**, as it **won't auto-update** existing pods.
+</Warning>
+
+The key difference between Replication Controller and ReplicaSet is that ReplicaSet requires a **selector** definition. The selector **identifies the pods** that the ReplicaSet will manage using **label selectors**.
+
+ReplicaSet can also manage pods that were **not created as part of the ReplicaSet creation**.
+
+```yaml title="replicaset.yaml"
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: replicaset-name
+spec:
+  replicas: 3
+  selector:
+    matchLabels:       # must match the pod labels in the template section
+      app: web-server
+  template:
+    metadata:
+      name: pod-name
+      labels:
+        app: web-server
+    spec:
+      containers:
+        - name: container-name
+          image: web-server-image
+```
+
+```bash
+kubectl get replicaset
+kubectl scale --replicas=5 -f <file-name>
+kubectl scale --replicas=5 replicaset <replicaset-name>
+kubectl delete replicaset <replicaset-name>
+```

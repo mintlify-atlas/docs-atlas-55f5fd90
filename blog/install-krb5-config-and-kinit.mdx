@@ -1,0 +1,37 @@
+---
+title: Install krb5-config and kinit
+description: Learn how to install krb5-config and kinit on Ubuntu for Kerberos authentication.
+---
+
+## Installing krb5-config and kinit
+
+To install `krb5-config` and `kinit`, run the following commands:
+
+```bash
+sudo apt update
+sudo apt install -y libkrb5-dev krb5-user
+```
+
+## Verify the Installation
+
+Check that `krb5-config` is installed correctly:
+
+```bash
+which krb5-config && krb5-config --version
+```
+
+## Install Build Tools (if needed)
+
+<Note>
+  You might encounter an error about a **missing C compiler**. This is normal if you only need the configuration tool itself. If you need full build functionality, install the build essential packages:
+</Note>
+
+```bash
+sudo apt install -y build-essential
+```
+
+## Verify kinit
+
+```bash
+which kinit && kinit
+```

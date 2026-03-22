@@ -1,0 +1,69 @@
+---
+title: Convert Sphinx Documentation to PDF
+description: Two methods for exporting Sphinx docs to PDF — the built-in LaTeX builder and the simpler sphinx-simplepdf extension.
+---
+
+Sphinx documentation can be converted to PDF through several methods. This guide covers the two most practical approaches:
+
+- Using Sphinx's built-in LaTeX builder
+- Using the `sphinx-simplepdf` extension **(Recommended)**
+
+<Note>
+  Other tools exist for this task — `rst2pdf`, `pandoc`, `sphinx-pdf-generate` — but they are not covered here.
+</Note>
+
+## Method 1: Built-in LaTeX Builder
+
+This method generates LaTeX source files from your Sphinx content and then compiles them into a PDF using a LaTeX distribution such as **TeX Live** (cross-platform) or **MiKTeX** (Windows).
+
+<Warning>
+  You must have a LaTeX distribution installed before running this command. Without one, the build will fail with:
+
+  ```text
+  'latexmk' is not recognized as an internal or external command,
+  operable program or batch file.
+  ```
+</Warning>
+
+```bash
+make latexpdf
+```
+
+This generates LaTeX source files in the `_build/latex` directory and then attempts to compile them into a PDF.
+
+If you encounter **Unicode character issues** during compilation, set the `latex_engine` in your `conf.py`:
+
+```python title="conf.py"
+latex_engine = "xelatex"  # or "lualatex"
+```
+
+<Tip>
+  `xelatex` and `lualatex` handle Unicode characters more gracefully than the default `pdflatex` engine.
+</Tip>
+
+## Method 2: `sphinx-simplepdf` Extension (Recommended)
+
+The `sphinx-simplepdf` extension is more straightforward and user-friendly. It simplifies PDF generation and handles various content types more reliably than the LaTeX route.
+
+```bash
+pip install sphinx-simplepdf
+```
+
+<Note>
+  `sphinx-simplepdf` depends on **WeasyPrint**. Follow the [WeasyPrint installation guide](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html) for your platform before proceeding.
+</Note>
+
+Add `sphinx_simplepdf` to the extensions list in `conf.py`:
+
+```python title="conf.py"
+extensions = [
+    # ... other extensions
+    'sphinx_simplepdf',
+]
+```
+
+Then build the PDF:
+
+```bash
+make simplepdf
+```

@@ -1,0 +1,47 @@
+---
+title: Remote Server Connection
+description: Connect to remote servers using SSH, run remote commands, and understand how known_hosts protects against man-in-the-middle attacks.
+---
+
+## Connecting to a Remote Server
+
+Use the `ssh` command to establish a connection to a remote host:
+
+```bash
+# Connect using your local machine username (if it matches the remote)
+ssh <remote-host-ip-address/name>
+
+# Specify a different username
+ssh <username>@<remote-host-ip-address/name>
+
+# Connect on a non-default port
+ssh -p <port-number> <username>@<remote-host-ip-address/name>
+
+# Show verbose output for debugging
+ssh -v <username>@<remote-host-ip-address/name>
+
+# Run a single command on the remote host (connection closes when done)
+ssh <username>@<remote-host-ip-address/name> <command-to-run>
+ssh <username>@<remote-host-ip-address/name> ls -la
+```
+
+### Parameters
+
+| Parameter | Description | Example |
+| --- | --- | --- |
+| `-p` | Port number | `2222` |
+| `-v` | Verbose output for more connection details | — |
+
+<Info>
+  To simplify repeated connections, create a [host-specific configuration file](/docs/ssh/host-configuration) using SSH client config aliases.
+</Info>
+
+## known_hosts
+
+When you SSH to a server for the first time, a fingerprint is displayed and you are prompted to confirm the connection. Accepting it saves the fingerprint to your local `~/.ssh/known_hosts` file, so you are not prompted again on future connections.
+
+<Note>
+  The `known_hosts` file is automatically created in your local `~/.ssh/` directory the first time you accept a server's fingerprint.
+</Note>
+
+This mechanism helps prevent **man-in-the-middle attacks** — if a server's fingerprint changes unexpectedly, SSH will warn you before connecting.

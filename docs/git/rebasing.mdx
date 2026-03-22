@@ -1,0 +1,103 @@
+---
+title: Rebasing
+description: Learn how to use git rebase to integrate changes cleanly, squash commits with interactive rebase, and cherry-pick specific commits.
+---
+
+## Rebase
+
+Rebase and merge both integrate changes from one branch into another, but they work differently:
+
+| | Merge | Rebase |
+|---|---|---|
+| **Commit hashes** | Unchanged — history is not rewritten | Updated — commits are re-applied on top of the target branch |
+| **History** | Preserves the original branch structure with a merge commit | Produces a linear, cleaner history |
+
+### When to rebase
+
+Suppose Developer A is working on the `develop` branch while the team continues pushing commits to `main`. Developer A wants to keep `develop` up to date with `main` without creating a merge commit.
+
+Instead of merging:
+
+```bash
+git merge main
+```
+
+Rebase `develop` on top of `main`:
+
+```bash
+git checkout develop
+git rebase main
+```
+
+This re-applies all `develop` commits on top of the latest `main` commits, resulting in a linear history as if the `develop` work had started from the current tip of `main`.
+
+<Warning>
+  Rebasing rewrites commit hashes. Never rebase branches that have been pushed to a shared remote unless all collaborators are aware and prepared to handle the rewritten history.
+</Warning>
+
+## Interactive rebasing
+
+Interactive rebase lets you modify the Git history before applying it — for example, combining multiple commits into one (squashing).
+
+Suppose you have these commits:
+
+```
+docs: create first story
+docs: create second story
+docs: create programming
+docs: create same story 1
+docs: edit same-story
+docs: more changes to same-story
+docs: more more changes to same-story
+```
+
+To squash the latest 3 commits into the 4th commit, rebase the last 4:
+
+```bash
+git rebase -i HEAD~4
+```
+
+Git opens an editor listing the four commits. Mark the three commits you want to squash with `squash` (or `s`) instead of `pick`. After saving, they are combined into one commit.
+
+Result:
+
+```
+docs: create first story
+docs: create second story
+docs: create programming
+squashed latest 3 commits into here
+```
+
+## Cherry-pick
+
+Cherry-pick lets you apply a specific commit from one branch onto another branch, without merging all other changes from that branch.
+
+### When to cherry-pick
+
+Suppose Developer A is on `main` and wants only the changes from the `"docs: edit second story"` commit on `develop`.
+
+<Steps>
+  <Step title="Identify the commit hash">
+    ```bash
+    git log develop --oneline
+    ```
+
+    Note the hash of the commit you want, e.g. `abc1234`.
+  </Step>
+  <Step title="Check out the target branch">
+    ```bash
+    git checkout main
+    ```
+  </Step>
+  <Step title="Cherry-pick the commit">
+    ```bash
+    git cherry-pick <commit-id>
+    ```
+
+    Git creates a copy of that commit on top of the current branch.
+  </Step>
+</Steps>
+
+<Note>
+  Cherry-pick only brings in the changes from the selected commit, not the full branch history. If you encounter merge conflicts, resolve them manually and complete the cherry-pick.
+</Note>

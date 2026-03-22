@@ -1,0 +1,122 @@
+---
+title: Memory (RAM)
+description: Understand how RAM works, how data is stored in memory as binary, and how memory addresses and contiguous storage underpin all data structures.
+---
+
+## Introduction
+
+Before diving into data structures, it helps to understand how computers store data at a low level. **Computers process data in binary form**, represented by **bits (0s and 1s)**. These bits are grouped into **bytes**, and bytes represent various types of data such as integers, characters, and more complex structures.
+
+As a developer, you work with **variables** in your code. These variables are stored in the computer's memory so they can be accessed and manipulated during program execution — this is where **RAM** comes in.
+
+## What is RAM?
+
+RAM stands for **Random Access Memory** — a type of computer memory used to **store data that is actively being used or processed**. RAM is **volatile memory**, meaning it **loses its contents** when the computer is turned off.
+
+<Note>
+  **1 byte = 8 bits.** A bit is a `0` or `1`. RAM capacity is measured in bytes (KB, MB, GB).
+</Note>
+
+Modern computers typically have **at least 8 GB of RAM**. More RAM means more data can be processed simultaneously.
+
+| RAM Size | Bytes | Integers (4 bytes each) |
+| -------- | ----- | ----------------------- |
+| 8 GB | 8,589,934,592 | ~2.1 billion |
+| 16 GB | 17,179,869,184 | ~4.3 billion |
+
+### Components of RAM
+
+RAM can be thought of as a **contiguous block of data** where each location has two components:
+
+- **Value** — the actual data being stored (e.g., an integer, a character).
+- **Address** — the location where the value is stored in memory, used to access the value.
+
+<Note>
+  **What is a contiguous block of data?**
+  Data is stored in a **continuous sequence of memory addresses** with no gaps. If an array starts at address `1000` and each element takes 4 bytes, the second element is at `1004`, the third at `1008`, and so on. This enables **fast O(1) index access** by computing `address = base + (index × element_size)`.
+</Note>
+
+## Binary Representation
+
+Computers use **binary** to store and process all data. Each digit in a binary number is a **bit**. Multiple bits are grouped to form larger data types:
+
+| Unit | Bits | Example |
+| ---- | ---- | ------- |
+| Bit | 1 | `1` |
+| Byte | 8 | `00000101` |
+| Word | 16 | `00000000 00000101` |
+| Double Word | 32 | `00000000 00000000 00000000 00000101` |
+
+<Note>
+  Binary numbers are based on **powers of 2**. Each position represents a power of 2, starting from 2⁰ on the right.
+
+  ```
+  Position:  7    6    5    4    3    2    1    0
+  ================================================
+  Power:     2⁷   2⁶   2⁵   2⁴   2³   2²   2¹   2⁰
+  Value:     128  64   32   16   8    4    2    1
+  ```
+
+  **To convert binary to decimal:** Add up the values where the bit is `1`.
+</Note>
+
+For example, the decimal number `5` in binary:
+- 8-bit: `00000101`
+- 32-bit: `00000000 00000000 00000000 00000101`
+
+Binary representation of the first 10 decimal numbers:
+
+| Decimal | 8-bit | 16-bit | 32-bit |
+| ------- | ----- | ------ | ------ |
+| 1 | `00000001` | `00000000 00000001` | `... 00000001` |
+| 2 | `00000010` | `00000000 00000010` | `... 00000010` |
+| 3 | `00000011` | `00000000 00000011` | `... 00000011` |
+| 4 | `00000100` | `00000000 00000100` | `... 00000100` |
+| 5 | `00000101` | `00000000 00000101` | `... 00000101` |
+| 8 | `00001000` | `00000000 00001000` | `... 00001000` |
+| 10 | `00001010` | `00000000 00001010` | `... 00001010` |
+
+## How Data is Stored in RAM
+
+<Tabs>
+  <Tab title="Array of Integers">
+    Consider the array `[1, 2, 3]`. Each integer is **converted to binary** and stored in **contiguous memory addresses**.
+
+    ```
+    Address: 100  │ 00000001  (Integer: 1)
+    Address: 104  │ 00000010  (Integer: 2)
+    Address: 108  │ 00000011  (Integer: 3)
+    ```
+
+    <Note>
+      **Why does the address increment by 4?**
+      Each integer takes **4 bytes (32 bits)** of memory. Since each memory address points to 1 byte, you need 4 consecutive addresses per integer.
+
+      Address formula: `Element address = base_address + (index × element_size)`
+      - `Array[0] = 100 + (0 × 4) = 100`
+      - `Array[1] = 100 + (1 × 4) = 104`
+      - `Array[2] = 100 + (2 × 4) = 108`
+    </Note>
+
+    Elements in the array are stored **continuously and in order**. You cannot choose which memory location the data is placed in — the OS and runtime handle that.
+  </Tab>
+  <Tab title="Array of Characters">
+    Consider the array `['a', 'b', 'c']`. Characters are stored using their **ASCII binary values**.
+
+    ```
+    Address: 100  │ 01100001  (Character: 'a', decimal 97)
+    Address: 101  │ 01100010  (Character: 'b', decimal 98)
+    Address: 102  │ 01100011  (Character: 'c', decimal 99)
+    ```
+
+    <Note>
+      **Why does the address increment by 1?**
+      Each character takes **1 byte (8 bits)** of memory.
+
+      Address formula: `Element address = base_address + (index × element_size)`
+      - `Array[0] = 100 + (0 × 1) = 100`
+      - `Array[1] = 100 + (1 × 1) = 101`
+      - `Array[2] = 100 + (2 × 1) = 102`
+    </Note>
+  </Tab>
+</Tabs>

@@ -1,0 +1,57 @@
+---
+title: DaemonSet
+description: Learn about DaemonSets in Kubernetes, which ensure that all or some nodes run a copy of a Pod.
+---
+
+## Concept and Usage of DaemonSet
+
+A DaemonSet **ensures that all (or some) nodes run a copy of a Pod**.
+
+- Whenever a **new node is added** to the cluster, a pod is **automatically added** to that node.
+- When a **node is removed** from the cluster, the pod is **automatically removed**.
+
+<Note>
+  DaemonSet uses the **default scheduler** and node affinity rules to schedule pods on nodes.
+</Note>
+
+**Use cases:**
+
+<CardGroup cols={2}>
+  <Card title="Logging Agent" icon="file-lines">
+    Run a logging agent (collector) on all nodes.
+  </Card>
+  <Card title="Monitoring Agent" icon="chart-line">
+    Run a monitoring agent on all nodes.
+  </Card>
+  <Card title="Network Services" icon="network-wired">
+    Set up network services like firewall, load-balancer, network proxies, or VPN on all nodes.
+  </Card>
+  <Card title="kube-proxy" icon="server">
+    The `kube-proxy` component is actually deployed as a DaemonSet in Kubernetes.
+  </Card>
+</CardGroup>
+
+## DaemonSet YAML
+
+```yaml title="daemonset.yaml"
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: sample-daemonset
+spec:
+  selector:
+    matchLabels:
+      app: sample-agent
+  template:
+    metadata:
+      labels:
+        app: sample-agent
+    spec:
+      containers:
+        - name: sample-monitoring-agent
+          image: sample-monitoring-agent-image
+```
+
+```bash
+kubectl get daemonsets
+```

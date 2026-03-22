@@ -1,0 +1,139 @@
+---
+title: Setup Ubuntu Static IP
+description: Learn how to configure a static IP address on Ubuntu by editing the Netplan configuration files for consistent network connectivity.
+---
+
+To configure a static IP address on Ubuntu, edit the **Netplan network configuration files**.
+
+<Steps>
+  ### Find your network interface
+
+  ```bash
+  ip addr
+  ```
+
+  Look for the interface that is currently connected to your network. In this example it is `wlo1`:
+
+  ```bash
+  3: wlo1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+      link/ether a0:29:42:00:3c:78 brd ff:ff:ff:ff:ff:ff
+      altname wlp0s20f3
+      inet 192.168.0.20/24 brd 192.168.0.255 scope global dynamic noprefixroute wlo1
+  ```
+
+  ### Create or edit the Netplan configuration file
+
+  List the files in `/etc/netplan/`:
+
+  ```bash
+  ls /etc/netplan
+  # 01-network-manager-all.yaml  50-cloud-init.yaml
+  ```
+
+  Create a new file called `99-static-ip.yaml`. Using a **higher prefix** like `99-` ensures this configuration **takes priority** over earlier files like `01-` or `50-`.
+
+  First, find your default gateway:
+
+  ```bash
+  ip route | grep default
+  # default via 192.168.0.1 dev wlo1 proto dhcp src 192.168.0.20 metric 600
+  ```
+
+  Then create the config file:
+
+  ```yaml title="/etc/netplan/99-static-ip.yaml"
+  network:
+    version: 2
+    renderer: NetworkManager
+    # ethernets:  # for wired connections
+    wifis:        # for wireless connections
+      wlo1:       # use your actual interface name
+        dhcp4: no
+        dhcp6: no
+        addresses:
+          - 192.168.0.20/24
+        routes:
+          - to: default
+            via: 192.168.0.1
+        nameservers:
+          addresses: [8.8.8.8, 8.8.4.4, 1.1.1.1]
+        access-points:  # for wireless connections only
+          "kc_5G":
+            password: <wireless-password>
+  ```
+
+  <Note>
+    **Nameservers** translate domain names to IP addresses:
+    - `8.8.8.8` = Google Public DNS
+    - `8.8.4.4` = Google Secondary DNS
+    - `1.1.1.1` = Cloudflare Public DNS
+  </Note>
+
+  ### Apply the Netplan configuration
+
+  Test the configuration first:
+
+  ```bash
+  sudo netplan try
+  ```
+
+  If you see **"Permissions are too open"** warnings, fix them:
+
+  ```bash
+  sudo chmod 600 /etc/netplan/01-network-manager-all.yaml
+  sudo chmod 600 /etc/netplan/99-static-ip.yaml
+  ```
+
+  Then apply:
+
+  ```bash
+  sudo netplan try   # Accept within the timeout window
+  sudo netplan apply
+  ```
+
+  ### Verify the static IP
+
+  Use `ip addr` to confirm the `dynamic` keyword is gone:
+
+  ```bash
+  ip addr show wlo1
+  # inet 192.168.0.20/24 brd 192.168.0.255 scope global noprefixroute wlo1
+  ```
+
+  Use `ip route` to confirm `proto static`:
+
+  ```bash
+  ip route | grep default
+  # default via 192.168.0.1 dev wlo1 proto static metric 600
+  ```
+
+  Test internet connectivity:
+
+  ```bash
+  ping -c 3 google.com
+  ```
+
+  <Warning>
+    If you still see `dynamic` or `proto dhcp` after applying the config, try the following:
+
+    1. Disable cloud-init network management:
+
+       ```bash
+       echo "network: {config: disabled}" | sudo tee /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+       ```
+
+    2. Move conflicting Netplan files to a backup folder:
+
+       ```bash
+       mkdir backup
+       mv 50-cloud-init.yaml 90-NM-*.yaml backup/
+       ```
+
+    3. Flush the old dynamic lease and reapply:
+
+       ```bash
+       sudo ip addr flush dev <interface-name>
+       sudo netplan apply
+       ```
+  </Warning>
+</Steps>

@@ -1,0 +1,77 @@
+---
+title: Stop a Service in Windows
+description: Two methods for stopping a Windows service and preventing it from automatically restarting on failure — using the Services GUI or the command line.
+---
+
+## Stop a Service in Windows
+
+Windows services are typically configured to restart automatically on failure. This guide shows how to stop a service **and** prevent it from restarting, using `multipassd` as the example.
+
+<Note>
+  To **permanently disable** a service from starting at all, run:
+
+  ```powershell
+  sc config "[ServiceName]" start= disabled
+  ```
+</Note>
+
+## Method 1: Services Management Console (GUI)
+
+<Steps>
+
+### Open the Services console
+
+Press `Windows Key + R`, type `services.msc`, and press `Enter`.
+
+### Find and open the service properties
+
+Scroll down to find **Multipass Service** (or `multipassd`), right-click it, and select **Properties**.
+
+### Disable automatic restart on failure
+
+Go to the **Recovery** tab. Change the actions for **First failure**, **Second failure**, and **Subsequent failures** to **Take No Action**.
+
+### Apply and stop
+
+Click **Apply**, then **OK**. You can then stop the service immediately:
+
+```powershell
+sc stop "Multipass Service"
+```
+
+</Steps>
+
+## Method 2: Command Prompt (Administrator)
+
+<Steps>
+
+### Open an elevated Command Prompt
+
+Search for `cmd`, right-click, and select **Run as administrator**.
+
+### Stop the running service
+
+```powershell
+sc stop "Multipass Service"
+```
+
+### Configure failure actions to take no action
+
+```powershell
+sc failure "Multipass Service" reset= 0 actions=
+```
+
+<Note>
+  - `reset= 0` — resets the failure count after 0 seconds (note the space before `0` is required by `sc`).
+  - `actions=` — specifies no action to take on failures (empty value means no action).
+</Note>
+
+### Confirm the service is stopped
+
+```powershell
+sc stop "Multipass Service"
+```
+
+The changes take effect the next time the service is started — either manually or after a system reboot.
+
+</Steps>

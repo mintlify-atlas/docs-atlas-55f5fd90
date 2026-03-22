@@ -1,0 +1,49 @@
+---
+title: Useful Commands
+description: Handy Docker commands for monitoring events, checking disk usage, and copying files between host and container.
+---
+
+## Docker System Events
+
+Get **real-time events** logged by the Docker server. All changes made to containers or networks are captured here.
+
+```bash
+docker system events --since 60m
+docker system events --since 2024-05-30
+docker system events --filter '<key>=<value>'
+docker system events --filter 'container=588a23dac085'
+```
+
+## Disk Usage Metrics
+
+Displays the **actual size** of the different objects managed by Docker.
+
+```bash
+docker system df
+docker system df -v  # verbose output
+```
+
+## Copy Files
+
+<Info>
+  Ensure the destination directory exists on both sides before copying. You can also copy entire directories.
+</Info>
+
+<Tabs>
+  <Tab title="Host to Container">
+    ```bash
+    docker container cp <local-path> <container>:<container-path>
+
+    # Example
+    docker container cp /home/username/config.yaml apiapp:/etc/api/config.yaml
+    ```
+  </Tab>
+  <Tab title="Container to Host">
+    ```bash
+    docker container cp <container>:<container-path> <local-path>
+
+    # Example
+    docker container cp apiapp:/etc/api/config.yaml /home/username/config.yaml
+    ```
+  </Tab>
+</Tabs>

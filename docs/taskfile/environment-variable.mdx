@@ -1,0 +1,117 @@
+---
+title: Environment Variables
+description: Declare and use environment variables in Taskfile via .env files or the env option, and learn how to override them.
+---
+
+## Declaring Environment Variables
+
+There are two ways to declare environment variables in Taskfile:
+1. Using a **`.env` file** via the `dotenv` option
+2. Using the **`env` option** directly in the Taskfile
+
+<Note>
+  To **override** an environment variable value at runtime, reference it using `$ENV_NAME` format (not `{{.ENV_NAME}}`). For example, `export STAGE=dev` will override a value defined in a `.env` file or `env` option.
+</Note>
+
+## Using a `.env` File
+
+<Info>
+  You can specify the `dotenv` option at the **global** or **task level**.
+</Info>
+
+Given this file structure:
+
+```
+/home/<user>/
+├── Taskfile.yml
+├── .env
+└── test/
+    └── .env
+```
+
+<Tabs>
+  <Tab title="~/.env">
+    ```text
+    STAGE=test
+    ```
+  </Tab>
+  <Tab title="test/.env">
+    ```text
+    ENDPOINT=testing.com
+    ```
+  </Tab>
+</Tabs>
+
+```yaml title="Taskfile.yml"
+version: '3'
+
+dotenv: # global environment variables for all tasks
+  - '.env'
+
+env:
+  MYENV: test
+
+tasks:
+  hello:
+    dotenv: ['{{ .MYENV }}/.env', '{{ .HOME }}/.env']
+    cmds:
+      - 'echo "Endpoint is: $ENDPOINT, Stage is: $STAGE"'
+```
+
+- `.HOME` is a **magic variable** that refers to the home directory of the user.
+- `export STAGE=dev` set explicitly in the environment will **override** the `.env` value.
+- `export MYENV=prod` will **not** override a value defined directly in the Taskfile `env` block.
+
+```bash title="Demo and output"
+ubuntu@touted-mite:~$ task hello
+task: [hello] echo "Endpoint is: $ENDPOINT, Stage is: $STAGE"
+Endpoint is: testing.com, Stage is: test
+
+# Override STAGE
+ubuntu@touted-mite:~$ export STAGE=dev
+ubuntu@touted-mite:~$ task hello
+task: [hello] echo "Endpoint is: $ENDPOINT, Stage is: $STAGE"
+Endpoint is: testing.com, Stage is: dev
+```
+
+## Using the `env` Option
+
+```yaml title="Taskfile.yml"
+version: '3'
+
+env: # global environment variables for all tasks
+  HOME: /root
+
+tasks:
+  msg:
+    env:
+      MESSAGE: Hello
+    cmds:
+      - 'echo "Message is: $MESSAGE"'
+      - 'echo "Home directory is $HOME"'
+```
+
+## Override a dotenv Variable with `env`
+
+```text title=".env"
+ENDPOINT=testing.com
+```
+
+```yaml title="Taskfile.yml"
+version: '3'
+
+tasks:
+  hello:
+    dotenv:
+      - '.env'
+    env:
+      ENDPOINT: dev.com # overrides the value from .env
+    cmds:
+      - 'echo "Endpoint is: $ENDPOINT"'
+```
+
+```bash title="Demo and output"
+ubuntu@touted-mite:~$ task hello
+task: [hello] echo "Endpoint is: $ENDPOINT"
+Endpoint is: dev.com
+```

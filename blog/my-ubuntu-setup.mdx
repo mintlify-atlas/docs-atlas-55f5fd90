@@ -1,0 +1,114 @@
+---
+title: My Ubuntu Setup
+description: Learn how to set up and customize your Ubuntu desktop with themes, icons, and GNOME extensions for a better user experience.
+---
+
+Customizing your Ubuntu can significantly **enhance your user experience**. This guide walks through setting up a beautiful theme, icon pack, and useful GNOME extensions.
+
+Before starting, browse [gnome-look.org](https://www.gnome-look.org/browse/) to find themes, icons, and cursors. This guide uses **[Orchis-theme](https://github.com/vinceliuice/Orchis-theme)** and **[candy-icons](https://github.com/EliverLara/candy-icons)**.
+
+## Theme Setup
+
+<Steps>
+  ### Install gnome-tweaks
+
+  To fully customize your Ubuntu theme, install `gnome-tweaks`:
+
+  ```bash
+  sudo apt-get update
+  sudo apt-get install gnome-tweaks gnome-shell-extensions
+  ```
+
+  Open it by typing `gnome-tweaks` in your terminal or by searching for **"Tweaks"** in your application menu.
+
+  ### Download and install Orchis Theme
+
+  Clone the Orchis theme repository:
+
+  ```bash
+  git clone https://github.com/vinceliuice/Orchis-theme.git
+  ```
+
+  <Note>
+    There are many options to configure the theme. Read the [README](https://github.com/vinceliuice/Orchis-theme?tab=readme-ov-file#manual-installation) for all available flags before running the install script.
+  </Note>
+
+  Navigate to the cloned directory and run the installation script:
+
+  ```bash
+  cd Orchis-theme
+  ./install.sh -h   # View all options
+
+  # Example: install all variants with the black tweak to ~/.themes
+  ./install.sh -d $HOME/.themes -t all --tweaks black
+  ```
+
+  Make sure the theme is installed in the `~/.themes` directory.
+
+  ### Apply the theme via gnome-tweaks
+
+  Open **gnome-tweaks**, navigate to **Appearance**, and change your **Applications**, **Cursor**, and **Icons** themes. Or apply it from the command line:
+
+  ```bash
+  gsettings set org.gnome.desktop.interface gtk-theme "Orchis"
+  ```
+</Steps>
+
+## Icons Setup
+
+<Steps>
+  ### Download the candy-icons zip
+
+  ```bash
+  wget https://github.com/EliverLara/candy-icons/archive/refs/heads/master.zip -O /tmp/candy.zip
+  ```
+
+  ### Unzip to the icons directory
+
+  Extract the `.zip` file to one of the following locations:
+  - `/usr/share/icons/`
+  - `~/.local/share/.icons/`
+  - `~/.icons/`
+
+  ```bash
+  unzip /tmp/candy.zip -d ~/.icons
+  ```
+
+  ### Apply the icon theme
+
+  ```bash
+  gsettings set org.gnome.desktop.interface icon-theme "candy-icons"
+  ```
+</Steps>
+
+## GNOME Extensions
+
+GNOME extensions can significantly **enhance your desktop experience**.
+
+<Steps>
+  ### Install Extension Manager
+
+  ```bash
+  sudo apt install gnome-shell-extension-manager
+  ```
+
+  ### Open Extension Manager
+
+  ```bash
+  extension-manager
+  ```
+
+  ### Install recommended extensions
+
+  Search for and install the following extensions:
+
+  | Extension | Description |
+  |---|---|
+  | **Add to Desktop** | Easily add applications to your desktop |
+  | **GNOME Fuzzy App Search** | Faster and more intuitive app search |
+  | **App menu is back** | Restores the application menu for quick access |
+  | **Clipboard Indicator** | Manage clipboard history from the top bar |
+  | **Logo Menu** | Replaces the GNOME logo with a customizable menu |
+  | **Text Clock** | Displays a text-based clock in the top bar |
+  | **System Monitor** | Shows system performance stats in the top bar |
+</Steps>

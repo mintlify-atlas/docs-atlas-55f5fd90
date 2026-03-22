@@ -1,0 +1,144 @@
+---
+title: Deployment
+description: Learn about Kubernetes Deployments, including rolling updates, rollbacks, and deployment strategies.
+---
+
+## What is a Deployment?
+
+A Deployment is a **higher-level abstraction** that **manages a set of replicas** of the application, just like a ReplicaSet, but with **more features** like **rolling updates** and **rollbacks**.
+
+```
+Deployment
+  └── ReplicaSet
+        ├── Pod
+        ├── Pod
+        └── Pod
+```
+
+For example, if you want to upgrade 3 application instances one by one without downtime, this is where Deployment comes into play. This upgrade process is called a **rolling update**.
+
+```yaml title="deployment.yaml"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      name: app-pod
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend-container
+          image: backend:1.0
+```
+
+```bash
+kubectl get deployments
+kubectl create deployment <deployment-name> --image=<image-name> --replicas=<replicas>
+kubectl create deployment backend --image=web:1.0 --replicas=3
+```
+
+## Rollout and Rollback
+
+**Rollout** — A process of **updating the application** to a new version by gradually replacing old pods with new ones.
+
+**Rollback** — A process of **reverting to a previous version** if something goes wrong during the rollout.
+
+When you first create a deployment, it triggers a rollout. Each subsequent update triggers another rollout. If something goes wrong, you can rollback.
+
+```bash
+# Get the status of a rollout
+kubectl rollout status deployment/<deployment-name>
+
+# Get the revision history of a rollout
+kubectl rollout history deployment/<deployment-name>
+
+# Check a specific revision
+kubectl rollout history deployment/<deployment-name> --revision=<revision-number>
+kubectl rollout history deployment/app-deploy --revision=1
+
+# Rolling update
+kubectl set image deployment/<deployment-name> <container-name>=<new-image>
+kubectl set image deployment/app-deployment backend-container=backend:2.0
+
+# Save the command used to create/update against the revision number
+kubectl set image deployment/<deployment-name> <container-name>=<new-image> --record
+
+# Rollback (undo)
+kubectl rollout undo deployment/<deployment-name>
+
+# Rollback to a specific revision
+kubectl rollout undo deployment/<deployment-name> --to-revision=<revision-number>
+kubectl rollout undo deployment/app-deploy --to-revision=1
+```
+
+## Deployment Strategies
+
+<Tabs>
+  <Tab title="Recreate">
+    **All existing pods are terminated** before **new pods are created** with the new configuration. This causes **downtime during the update**.
+
+    ```yaml title="deployment.yaml"
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: app-deployment
+    spec:
+      replicas: 3
+      strategy:
+        type: Recreate
+      selector:
+        matchLabels:
+          app: backend
+      template:
+        metadata:
+          name: app-pod
+          labels:
+            app: backend
+        spec:
+          containers:
+            - name: backend-container
+              image: backend:1.0
+    ```
+  </Tab>
+  <Tab title="Rolling Update">
+    The **default deployment strategy**. Old pods are **gradually replaced** with new ones, ensuring the application remains **available during the update** with **minimal downtime**.
+
+    ```yaml title="deployment.yaml"
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: app-deployment
+    spec:
+      replicas: 3
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 1  # at most 1 pod unavailable during update
+          maxSurge: 1        # allows 1 additional pod above desired replicas
+      selector:
+        matchLabels:
+          app: backend
+      template:
+        metadata:
+          name: app-pod
+          labels:
+            app: backend
+        spec:
+          containers:
+            - name: backend-container
+              image: backend:1.0
+    ```
+
+    ```bash
+    # Trigger a rolling update
+    kubectl set image deployment/app-deployment backend-container=backend:2.0
+    ```
+  </Tab>
+</Tabs>

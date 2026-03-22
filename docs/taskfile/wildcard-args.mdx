@@ -1,0 +1,44 @@
+---
+title: Wildcard Arguments
+description: Use wildcard task names with * to capture multiple dynamic arguments stored in the .MATCH variable.
+---
+
+Wildcard arguments allow you to **capture dynamic segments of a task name** and use them as variables. The matched segments are stored in the `.MATCH` variable as an array.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+tasks:
+  service:*:*:
+    vars:
+      SERVICE_NAME: "{{index .MATCH 0}}"
+      REPLICAS: "{{index .MATCH 1}}"
+    cmds:
+      - 'echo Service Name: {{.SERVICE_NAME}}'
+      - 'echo Replicas: {{.REPLICAS}}'
+
+  service:*:
+    vars:
+      SERVICE_NAME: "{{index .MATCH 0}}"
+    cmds:
+      - 'echo Service Name: {{.SERVICE_NAME}}'
+```
+
+```bash title="Demo and Output"
+ubuntu@touted-mite:~$ task service:nginx
+task: [service:*] echo Service Name: nginx
+Service Name: nginx
+
+ubuntu@touted-mite:~$ task service:nginx:2
+task: [service:*:*] echo Service Name: nginx
+Service Name: nginx
+task: [service:*:*] echo Replicas: 2
+Replicas: 2
+```
+
+<Tip>
+  You can also use whitespace in wildcard arguments by quoting them:
+
+  ```bash
+  task "service:nginx hello-world"
+  ```
+</Tip>

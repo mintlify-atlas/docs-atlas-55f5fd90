@@ -1,0 +1,22 @@
+---
+title: Get Python Project Libraries Using pipreqs
+description: Learn how to generate a requirements.txt file for your Python project using pipreqs.
+---
+
+To get the libraries used in a Python project, you can use the `pipreqs` tool. This tool **scans your Python files** and **generates** a `requirements.txt` file with the libraries used in your project.
+
+<Tip>
+  Unlike `pip freeze`, which lists all packages in the current environment, `pipreqs` only includes packages that are actually imported in your project code.
+</Tip>
+
+## Usage
+
+```bash
+pip install pipreqs
+pipreqs /path/to/your/project --force
+
+# verify the generated requirements.txt
+cat requirements.txt
+```
+
+The `--force` flag overwrites an existing `requirements.txt` file if one already exists.

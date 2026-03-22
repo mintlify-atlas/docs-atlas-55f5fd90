@@ -1,0 +1,87 @@
+---
+title: What is Ansible?
+description: An introduction to Ansible, the open-source agentless automation tool for IT configuration management and application deployment.
+---
+
+Ansible is an **open-source automation tool** that simplifies IT automation, configuration management, and application deployment. It is **agentless**, meaning it does not require any special software to be installed on the managed nodes. Instead, it uses SSH to connect to the managed nodes and execute tasks on them.
+
+It is written in **Python** and uses **YAML** for its playbooks.
+
+<Note>
+  Full reference documentation is available at [docs.ansible.com](https://docs.ansible.com/).
+</Note>
+
+## The problem Ansible solves
+
+Without automation, managing many servers is tedious and error-prone. The two scenarios below illustrate the difference.
+
+<Tabs>
+  <Tab title="Without Ansible">
+    Imagine you have 10 servers and you need to install Git on all of them. You would SSH into each server individually and run the install command:
+
+    ```bash
+    ssh user@server1 "sudo apt update && sudo apt install git -y"
+    ssh user@server2 "sudo apt update && sudo apt install git -y"
+    ssh user@server3 "sudo apt update && sudo apt install git -y"
+    ssh user@server4 "sudo apt update && sudo apt install git -y"
+    ssh user@server5 "sudo apt update && sudo apt install git -y"
+    ssh user@server6 "sudo apt update && sudo apt install git -y"
+    ssh user@server7 "sudo apt update && sudo apt install git -y"
+    ssh user@server8 "sudo apt update && sudo apt install git -y"
+    ssh user@server9 "sudo apt update && sudo apt install git -y"
+    ssh user@server10 "sudo apt update && sudo apt install git -y"
+    ```
+
+    This is tedious and time-consuming. With 100 servers, the risk of human error increases significantly.
+  </Tab>
+  <Tab title="With Ansible">
+    Write a single playbook that installs Git across all servers at once:
+
+    ```yaml
+    - name: Install Git
+      hosts: all
+      become: yes
+      tasks:
+        - name: Install Git
+          apt:
+            name: git
+            state: present
+    ```
+
+    Then run it with one command:
+
+    ```bash
+    ansible-playbook playbook.yml
+    ```
+
+    Ansible connects to every server via SSH and applies the playbook in parallel.
+  </Tab>
+</Tabs>
+
+## Another example: adding a user
+
+The same pattern applies to any repetitive task, such as creating a new user across your fleet.
+
+<CodeGroup>
+
+```bash Without Ansible
+ssh user@server1
+sudo adduser newuser
+```
+
+```yaml With Ansible
+- name: Add new user
+  hosts: all
+  become: yes
+  tasks:
+    - name: Add new user
+      user:
+        name: newuser
+        state: present
+```
+
+</CodeGroup>
+
+<Tip>
+  With Ansible you define the **desired state** of your infrastructure. Ansible figures out what needs to change to reach that state, and skips servers that are already correct.
+</Tip>

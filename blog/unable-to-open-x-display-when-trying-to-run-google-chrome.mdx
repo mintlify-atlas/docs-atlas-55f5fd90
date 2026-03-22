@@ -1,0 +1,59 @@
+---
+title: Unable to Open X Display When Running Google Chrome on Ubuntu
+description: Fix the "Missing X server or $DISPLAY" error that occurs when trying to launch Google Chrome on a headless Ubuntu system.
+---
+
+## Unable to Open X Display When Running Google Chrome on Ubuntu
+
+When you try to run Google Chrome on a headless Ubuntu machine, you may see:
+
+```bash
+[4520:4520:0529/072952.636189:ERROR:ui/ozone/platform/x11/ozone_platform_x11.cc:248] Missing X server or $DISPLAY
+[4520:4520:0529/072952.636223:ERROR:ui/aura/env.cc:257] The platform failed to initialize. Exiting.
+```
+
+This indicates the X server is not running or the `$DISPLAY` environment variable is not set. The solution is to use **Xvfb** (X Virtual Framebuffer), which provides a virtual display without requiring physical hardware.
+
+<Steps>
+
+### Install Xvfb
+
+```bash
+sudo apt-get install -y xvfb
+```
+
+### Install Dependencies for Headless Chrome / Selenium
+
+```bash
+sudo apt-get -y install xorg xvfb gtk2-engines-pixbuf
+sudo apt-get -y install dbus-x11 xfonts-base xfonts-100dpi xfonts-75dpi xfonts-cyrillic xfonts-scalable
+```
+
+### (Optional) Install Screenshot Capture Utilities
+
+If you need to capture screenshots of the Xvfb display:
+
+```bash
+sudo apt-get -y install imagemagick x11-apps
+```
+
+### Start Xvfb and Export the DISPLAY Variable
+
+Add the following to your `.bashrc` or `.profile` so the virtual display starts automatically on login:
+
+```bash
+Xvfb -ac :99 -screen 0 1280x1024x16 &
+export DISPLAY=:99
+```
+
+<Tip>
+  The `:99` is an arbitrary display number. You can choose any unused display number. The `1280x1024x16` sets the screen resolution and colour depth.
+</Tip>
+
+### Launch Google Chrome
+
+```bash
+google-chrome
+```
+
+</Steps>

@@ -1,0 +1,108 @@
+---
+title: Services
+description: Learn about Kubernetes Services and how they connect applications using ClusterIP, NodePort, and LoadBalancer types.
+---
+
+## Services Introduction
+
+A Service is used to **connect applications together** by **exposing** a network application (Pod) in the cluster.
+
+The **internal Pod network** is in the range of **10.244.0.0**.
+
+<Tip>
+  Use `kubectl describe pods/<pod-name>` to get the pod IP address.
+</Tip>
+
+Kubernetes has three default service types:
+
+| Type | Description |
+| --- | --- |
+| `ClusterIP` | Creates a **virtual IP** for enabling communication between **different services within the cluster**. |
+| `NodePort` | **Exposes** an application to **external clients** by opening a port on worker nodes. |
+| `LoadBalancer` | Supports **external load balancers** and **distributes network traffic** across multiple instances. |
+
+## Service Types
+
+<Tabs>
+  <Tab title="ClusterIP">
+    Each pod has its own IP address, but these IPs are **not static** — pods can restart at any time and get new IPs. With **ClusterIP**, each service is assigned a **stable name and IP address** inside the cluster. Other pods can use either the service name or cluster IP to access the service.
+
+    This is the **default** service type.
+
+    ```yaml title="service.yaml"
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: backend-service
+    spec:
+      selector:
+        app: backend
+      type: ClusterIP
+      ports:
+        - targetPort: 8080  # Port that the Pod exposes
+          port: 8000        # Service port
+    ```
+  </Tab>
+  <Tab title="NodePort">
+    NodePort **maps an internal port on the node** to a port that the pod exposes via Service. The node port is used to **access the application externally**.
+
+    ```
+    NodePort (30121) → Service (8000) → Pod (8080)
+    ```
+
+    ```yaml title="service.yaml"
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: backend-service
+    spec:
+      selector:
+        app: backend
+      type: NodePort
+      ports:
+        - targetPort: 8080  # Port that the Pod exposes
+          port: 8000        # Service port
+          nodePort: 30121   # Valid range: 30000-32767
+    ```
+
+    <Note>
+      If you don't specify `nodePort`, the system will **automatically assign** one in the range **30000-32767**.
+    </Note>
+
+    ```bash
+    # Get your cluster IP address
+    kubectl cluster-info
+
+    # Access via public node IP and node port
+    curl http://<public-node-ip>:<node-port>
+    curl http://192.168.1.5:30121
+    ```
+
+    **Multiple pods with the same label:** If the service finds multiple pods with the same label, it will pick all of them as endpoints and use a **random algorithm** to distribute traffic.
+
+    **Pods across multiple nodes:** Kubernetes automatically creates a service that **spans all the nodes** and maps the targetPort to each nodePort. The application can be accessed using **any node IP** and the same nodePort.
+  </Tab>
+  <Tab title="LoadBalancer">
+    NodePort URLs (`http://<public-node-ip>:<node-port>`) are not user-friendly. The **LoadBalancer** type integrates with cloud providers (AWS, GCP, Azure) to provision a native load balancer automatically.
+
+    Kubernetes sends a request to the **cloud provider** to create a load balancer, assign it a **public IP address**, and route traffic to the service and then to the pods.
+
+    ```yaml title="service.yaml"
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: backend-service
+    spec:
+      selector:
+        app: backend
+      type: LoadBalancer
+      ports:
+        - targetPort: 8080
+          port: 8000
+    ```
+
+    <Note>
+      Using `type: LoadBalancer` has the same effect as `NodePort` for distributing traffic, but also provisions the cloud load balancer automatically.
+    </Note>
+  </Tab>
+</Tabs>

@@ -1,0 +1,25 @@
+---
+title: Port Forward
+description: Learn how to use kubectl port-forward to access Kubernetes services and pods from your local machine.
+---
+
+## Concept and Usage
+
+Port forwarding **allows you to access a service** running in a Kubernetes cluster **from your local machine**. This is useful for **debugging purposes** or to access a service that is not exposed to the public internet.
+
+```
+My Laptop: kubectl port-forward (8080) → Cluster resource port
+```
+
+## Commands
+
+```bash
+kubectl port-forward <resource-type>/<name> <local-port>:<resource-port>
+
+# Examples
+kubectl port-forward pod/my-pod 8080:80
+kubectl port-forward deployment/my-deployment 8080:80
+kubectl port-forward service/my-service 8080:80
+```
+
+In the examples above, the local port is `8080` and the cluster resource port is `80`. After running the command, you can access the service at `http://localhost:8080`.

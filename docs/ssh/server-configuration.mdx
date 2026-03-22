@@ -1,0 +1,116 @@
+---
+title: Server Configuration
+description: Harden your SSH server by disabling password authentication, changing the default port, restricting user access, and disabling root login.
+---
+
+All server-side SSH settings are controlled through the `/etc/ssh/sshd_config` file. After making any changes, restart the SSH service to apply them.
+
+<Tip>
+  Back up `sshd_config` before making changes: `sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak`
+</Tip>
+
+## Disable Password Authentication
+
+If you have configured SSH keys, disable password authentication to improve security. SSH key-based auth is significantly harder to brute-force.
+
+<Steps>
+  <Step title="Open sshd_config">
+    ```bash
+    sudo nano /etc/ssh/sshd_config
+    ```
+  </Step>
+  <Step title="Disable password authentication">
+    Find `PasswordAuthentication` and set it to `no`:
+
+    ```text
+    PasswordAuthentication no
+    ```
+  </Step>
+  <Step title="Restart SSH">
+    ```bash
+    sudo service ssh restart
+    ```
+  </Step>
+</Steps>
+
+## Change the SSH Daemon Port
+
+By default, SSH listens on port **22**. Changing this to a non-standard port reduces exposure to automated scanning and brute-force attempts.
+
+<Steps>
+  <Step title="Open sshd_config">
+    ```bash
+    sudo nano /etc/ssh/sshd_config
+    ```
+  </Step>
+  <Step title="Set a custom port">
+    Find the `Port` line and update it:
+
+    ```text
+    #Port 22
+    Port 1234
+    ```
+  </Step>
+  <Step title="Restart SSH">
+    ```bash
+    sudo service ssh restart
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  After changing the port, connect using `ssh -p 1234 username@host` or update your [host configuration file](/docs/ssh/host-configuration).
+</Note>
+
+## Limit Which Users Can Log In
+
+Restrict SSH access to specific users or groups to reduce the attack surface.
+
+<Steps>
+  <Step title="Open sshd_config">
+    ```bash
+    sudo nano /etc/ssh/sshd_config
+    ```
+  </Step>
+  <Step title="Add AllowUsers or AllowGroups">
+    If these directives don't exist, add them anywhere in the file:
+
+    ```text
+    AllowUsers user1 user2 user3
+    AllowGroups groupname
+    ```
+  </Step>
+  <Step title="Restart SSH">
+    ```bash
+    sudo service ssh restart
+    ```
+  </Step>
+</Steps>
+
+## Disable Root Login
+
+Allowing direct root login over SSH is a significant security risk. It is best practice to disable it and use a regular user with `sudo` instead.
+
+<Steps>
+  <Step title="Open sshd_config">
+    ```bash
+    sudo nano /etc/ssh/sshd_config
+    ```
+  </Step>
+  <Step title="Disable root login">
+    Find `PermitRootLogin` and set it to `no`:
+
+    ```text
+    PermitRootLogin no
+    ```
+  </Step>
+  <Step title="Restart SSH">
+    ```bash
+    sudo service ssh restart
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+  Make sure you have at least one non-root user with SSH access and `sudo` privileges before disabling root login, otherwise you may lock yourself out of the server.
+</Warning>

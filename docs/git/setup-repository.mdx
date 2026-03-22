@@ -1,0 +1,63 @@
+---
+title: Setup repository
+description: Learn how to initialize a new Git repository or clone an existing one to get started with version control.
+---
+
+## Initialize a new Git repo
+
+Use `git init` to create a new Git repository in a folder. This is a **one-time command** — you only run it once when setting up a new project.
+
+<Steps>
+  <Step title="Create a project folder">
+    ```bash
+    mkdir project
+    cd project
+    ```
+  </Step>
+  <Step title="Initialize the repository">
+    ```bash
+    git init
+    ```
+
+    To initialize in an existing directory:
+
+    ```bash
+    git init <directory>
+    ```
+  </Step>
+</Steps>
+
+After running `git init`, Git creates a hidden `.git/` folder inside your project to track all changes.
+
+## Clone an existing repo
+
+If your project already exists on a remote server (GitHub, Bitbucket, etc.), clone it to your local machine. Like `git init`, this is also a **one-time command**.
+
+```bash
+git clone <repo_url>
+
+# Example
+git clone https://github.com/KarChunT/karchunt.com
+```
+
+### Clone to a specific folder
+
+```bash
+git clone <repo_url> <directory>
+
+# Example
+git clone https://github.com/KarChunT/karchunt.com karchunt
+```
+
+### Clone a specific branch
+
+```bash
+git clone --branch <branch> <repo_url>
+
+# Example
+git clone --branch development https://github.com/KarChunT/karchunt.com
+```
+
+<Tip>
+  Use `git clone --branch` to start from a specific branch directly, instead of cloning the default branch and switching afterwards.
+</Tip>

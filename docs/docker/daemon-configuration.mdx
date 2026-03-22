@@ -1,0 +1,177 @@
+---
+title: Daemon Configuration
+description: Configure the Docker Daemon including TLS security, logging drivers, storage drivers, and troubleshooting.
+---
+
+## Docker Service Management
+
+```bash
+sudo systemctl start docker   # start Docker service
+sudo systemctl status docker  # check Docker service status
+sudo systemctl stop docker    # stop Docker service
+```
+
+## Start Docker Daemon Manually
+
+```bash
+dockerd
+dockerd --debug  # useful for troubleshooting
+```
+
+## Unix Socket
+
+The Unix socket is an **IPC** (inter-process communication) mechanism that enables **communication** between Docker clients (CLI, SDK) and the Docker Daemon **on the same host**.
+
+When the Docker daemon starts, it listens on an internal Unix Socket at `/var/run/docker.sock`. When a container is built, this socket file from the host is **mounted** into the container's filesystem, allowing the container to access the Docker Daemon API via the Docker CLI.
+
+<Warning>
+  Making the Docker Daemon accessible outside of the Docker host is **not recommended** for security reasons.
+</Warning>
+
+By default, the Docker Daemon only listens on the Unix Socket. It can also be configured to listen on a TCP interface:
+
+```bash
+dockerd --debug --host=tcp://192.168.0.196:2375
+```
+
+- `192.168.0.196` — IP address of the host machine
+- `2375` — Standard port for Docker (unencrypted traffic)
+
+Other hosts can then target this daemon by setting:
+
+```bash
+export DOCKER_HOST="tcp://192.168.0.196:2375"
+```
+
+### TLS Encryption
+
+Fix the unencrypted TCP issue by enabling TLS:
+
+```bash
+dockerd --debug \
+  --host="tcp://192.168.0.196:2376" \
+  --tls=true \
+  --tlscert="/var/docker/server.pem" \
+  --tlskey=/var/docker/serverkey.pem
+```
+
+<Note>
+  When TLS is enabled, use port **2376** (the standard port for encrypted Docker traffic).
+</Note>
+
+### Certificate-Based Authentication
+
+TLS encryption alone still allows anyone to access the daemon. Enable **certificate-based authentication** for full security:
+
+```bash
+dockerd --debug \
+  --host="tcp://192.168.0.196:2376" \
+  --tls=true \
+  --tlscert="/var/docker/server.pem" \
+  --tlskey="/var/docker/serverkey.pem" \
+  --tlsverify=true \
+  --tlscacert="/var/docker/caserver.pem"
+```
+
+- `--tlsverify` — Enables client authentication
+- `--tlscacert` — CA certificate used to verify client certificates
+
+Clients must generate their own `client.pem` and `clientkey.pem`, then set:
+
+```bash
+export DOCKER_TLS_VERIFY=true
+```
+
+## daemon.json Configuration File
+
+Instead of passing all flags to `dockerd` manually, move configuration to `/etc/docker/daemon.json`:
+
+```json
+{
+  "debug": true,
+  "hosts": ["tcp://192.168.0.196:2376"],
+  "tls": true,
+  "tlscert": "/var/docker/server.pem",
+  "tlskey": "/var/docker/serverkey.pem",
+  "tlsverify": true,
+  "tlscacert": "/var/docker/caserver.pem",
+  "live-restore": true
+}
+```
+
+`"live-restore": true` — Containers continue running even when the Docker Daemon stops.
+
+<Warning>
+  If options are specified in both `daemon.json` and the `dockerd` command, Docker will display a conflict error.
+</Warning>
+
+After editing `daemon.json`, reload Docker:
+
+```bash
+sudo systemctl reload docker
+docker system info  # verify your configuration
+```
+
+## Logging Driver
+
+<Info>
+  Use `docker logs` to retrieve container logs. Container logs are stored at `/var/lib/docker/containers/<id>.json` by default.
+</Info>
+
+The default logging driver is **json-file**. Check the current driver with `docker system info`.
+
+Available logging drivers:
+
+| Driver | Description |
+| --- | --- |
+| `json-file` | Default. Stores logs as JSON files on disk. |
+| `none` | No logging. |
+| `syslog` | Sends logs to the syslog daemon. |
+| `local` | Custom local logging. |
+| `journald` | Sends logs to journald (use `docker logs` to read). |
+| `splunk` | Sends logs to Splunk. |
+| `awslogs` | Sends logs to Amazon CloudWatch. |
+
+Example — route all container logs to Amazon CloudWatch:
+
+```json
+{
+  "log-driver": "awslogs",
+  "log-opt": {
+    "awslogs-region": "ap-southeast-1"
+  }
+}
+```
+
+## Storage Driver
+
+> Docker uses storage drivers to **store image layers** and data in the **writable layer** of a container. The storage driver **controls** how **images** and **containers** are **stored** and **managed** on your Docker host. — docker.docs
+
+Supported storage drivers:
+
+- `overlay2`
+- `btrfs` and `zfs`
+- `vfs`
+- `fuse-overlayfs`
+
+Change the storage driver in `/etc/docker/daemon.json`:
+
+```json
+{
+  "storage-driver": "overlay2"
+}
+```
+
+## Troubleshooting
+
+### View Docker Daemon logs
+
+```bash
+journalctl -u docker.service
+```
+
+### Check free disk space on host
+
+```bash
+df -h
+```

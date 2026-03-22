@@ -1,0 +1,155 @@
+---
+title: Inheritance
+description: Learn the types of inheritance in Python — single, multiple, multilevel, hierarchical, and hybrid — with examples and MRO explained.
+---
+
+## Concept
+
+Inheritance is a mechanism to **create a new class (subclass)** that **inherits attributes and methods** from an **existing class (parent class)**. It allows for **code reuse** and establishes a **relationship** between classes.
+
+| Type | Description | Example |
+| ---- | ----------- | ------- |
+| Single Inheritance | A subclass inherits from **one** parent class. | `class Dog(Animal): pass` |
+| Multiple Inheritance | A subclass inherits from **multiple** parent classes. | `class FlyingDog(Dog, Bird): pass` |
+| Multilevel Inheritance | A chain of inheritance across **three or more** levels. | `Animal → Mammal → Dog` |
+| Hierarchical Inheritance | **Multiple subclasses** inherit from a **single** parent class. | `Animal → Dog, Cat, Bird` |
+| Hybrid Inheritance | A **combination** of two or more types of inheritance. | `Dog` and `Bird` both extend `Animal`; `FlyingDog` extends both. |
+
+## Implementation
+
+<Accordion title="Single Inheritance">
+
+A subclass inherits from one parent class. Use `super().__init__()` to call the parent constructor.
+
+```python title="animal.py"
+class Animal:
+  def __init__(self, name, age):
+    self.name = name
+    self.age = age
+
+  def speak(self):
+    print("Animal speaks")
+
+class Dog(Animal):
+  def __init__(self, name, age):
+    super().__init__(name, age)  # Call the parent class constructor
+
+  def speak(self):  # Method overriding
+    print("Woof!")
+
+dog = Dog("Buddy", 3)
+dog.speak()                      # Output: Woof!
+print(dog.name)                  # Output: Buddy
+print(dog.age)                   # Output: 3
+print(isinstance(dog, Animal))   # Output: True
+```
+
+<Note>
+  `super().__init__(name, age)` calls the constructor of the parent class (`Animal`) to initialize inherited attributes. `isinstance(dog, Animal)` returns `True` because `Dog` is a subclass of `Animal`.
+</Note>
+
+</Accordion>
+
+<Accordion title="Multiple Inheritance">
+
+A subclass inherits from multiple parent classes. The order of method resolution is determined by the **Method Resolution Order (MRO)**, which follows the **C3 linearization algorithm**.
+
+```python title="animal.py"
+class Dog:
+  def bark(self):
+    print("Woof!")
+
+class Bird:
+  def fly(self):
+    print("Bird flies")
+
+class FlyingDog(Dog, Bird):
+  pass
+
+fd = FlyingDog()
+fd.bark()  # Output: Woof!
+fd.fly()   # Output: Bird flies
+```
+
+The MRO for `FlyingDog` is: `FlyingDog → Dog → Bird`
+
+You can inspect MRO at runtime:
+
+```python
+print(FlyingDog.__mro__)
+# (<class 'FlyingDog'>, <class 'Dog'>, <class 'Bird'>, <class 'object'>)
+```
+
+</Accordion>
+
+<Accordion title="Multilevel Inheritance">
+
+A chain where a subclass inherits from a parent, which itself inherits from another parent.
+
+```python title="animal.py"
+class Animal:
+  def eat(self):
+    print("Animal eats")
+
+class Mammal(Animal):
+  pass
+
+class Dog(Mammal):
+  pass
+
+dog = Dog()
+dog.eat()  # Output: Animal eats
+```
+
+</Accordion>
+
+<Accordion title="Hierarchical Inheritance">
+
+Multiple subclasses share a single parent class.
+
+```python title="animal.py"
+class Animal:
+  def sleep(self):
+    print("Animal sleeps")
+
+class Dog(Animal):
+  pass
+
+class Cat(Animal):
+  pass
+
+dog = Dog()
+cat = Cat()
+dog.sleep()  # Output: Animal sleeps
+cat.sleep()  # Output: Animal sleeps
+```
+
+</Accordion>
+
+<Accordion title="Hybrid Inheritance">
+
+A combination of multiple inheritance types. Here `Dog` and `Bird` both extend `Animal`, and `FlyingDog` extends both.
+
+```python title="animal.py"
+class Animal:
+  def move(self):
+    print("Animal moves")
+
+class Dog(Animal):
+  def bark(self):
+    print("Woof!")
+
+class Bird(Animal):
+  def fly(self):
+    print("Bird flies")
+
+class FlyingDog(Dog, Bird):
+  pass
+
+fd = FlyingDog()
+fd.move()  # Output: Animal moves
+fd.bark()  # Output: Woof!
+fd.fly()   # Output: Bird flies
+```
+
+</Accordion>

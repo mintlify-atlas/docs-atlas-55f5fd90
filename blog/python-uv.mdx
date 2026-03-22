@@ -1,0 +1,223 @@
+---
+title: Python UV Tutorial
+description: Learn how to use Python UV — a fast, modern package manager written in Rust — for managing Python projects.
+---
+
+## What is Python UV?
+
+UV is a **fast**, modern Python package manager written in **Rust**. It's designed as a drop-in replacement for `pip`, `pip-tools`, and other package managers, offering **significantly better performance** (10–100x faster than `pip`) while **maintaining compatibility** with the Python ecosystem.
+
+<Info>
+  **Key Features:**
+  - **Run Scripts** — execute scripts within project environments
+  - **Python version management** — install and switch between Python versions
+  - **Speed** — 10–100x faster than pip
+  - **Dependency management** — lock files and reproducible environments
+</Info>
+
+## Installation
+
+For more installation options, refer to the [official documentation](https://docs.astral.sh/uv/getting-started/installation/).
+
+### Standalone installer
+
+<CodeGroup>
+
+```bash Linux/macOS
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+```powershell Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+</CodeGroup>
+
+### PyPI
+
+`uv` is also available on PyPI:
+
+```bash
+pip install uv
+```
+
+## Shell Autocompletion
+
+After installing UV, set up shell autocompletion for a better user experience.
+
+<CodeGroup>
+
+```bash Bash
+echo 'eval "$(uv generate-shell-completion bash)"' >> ~/.bashrc
+```
+
+```powershell PowerShell
+if (!(Test-Path -Path $PROFILE)) {
+  New-Item -ItemType File -Path $PROFILE -Force
+}
+Add-Content -Path $PROFILE -Value '(& uv generate-shell-completion powershell) | Out-String | Invoke-Expression'
+```
+
+</CodeGroup>
+
+## Tool Management and Verification
+
+Verify the installed version:
+
+```bash
+uv --version
+```
+
+Update UV to the latest version:
+
+```bash
+uv self update
+# or
+pip install --upgrade uv
+```
+
+## Modern UV Project Workflow
+
+This workflow uses `uv` to create and manage a new Python project from scratch.
+
+<Steps>
+
+### Create a new project directory
+
+```bash
+mkdir my_uv_project
+cd my_uv_project
+```
+
+### Initialize a new UV project
+
+The `uv init` command sets up a new UV project by creating standard metadata files such as `pyproject.toml` and `.python-version`.
+
+```bash
+uv init
+```
+
+The folder structure will look like this:
+
+```text
+my_uv_project/
+├── .python-version
+├── pyproject.toml
+├── main.py
+└── README.md
+```
+
+### (Optional) Create a virtual environment
+
+The `uv venv` command creates an isolated virtual environment named `.venv` within the project directory.
+
+```bash
+uv venv
+```
+
+To target a specific Python version (uv will auto-download it if not present):
+
+```bash
+uv venv --python 3.12
+```
+
+### Install dependencies, lock, and sync
+
+Install packages with `uv add`. This updates `pyproject.toml`, resolves the dependency graph, and installs packages into the virtual environment.
+
+```bash
+uv add requests ruff
+```
+
+To lock and sync the environment:
+
+```bash
+uv lock
+uv sync
+```
+
+### Run scripts or tools
+
+Run Python scripts within the project's virtual environment:
+
+```bash
+uv run python main.py
+uv run main.py
+```
+
+Run installed tools directly:
+
+```bash
+uv run ruff check .
+```
+
+### Export dependencies
+
+Export to a `requirements.txt` file:
+
+```bash
+uv export -o requirements.txt
+```
+
+Alternatively, compile from `pyproject.toml`:
+
+```bash
+uv pip compile pyproject.toml -o requirements.txt
+```
+
+</Steps>
+
+## Command Equivalency
+
+For developers transitioning from `pip` and `venv` to `uv`:
+
+| pip | uv |
+| --- | -- |
+| `python -m venv .venv` | `uv venv` |
+| `pip install <package>` | `uv add <package>` |
+| `pip install -r requirements.txt` | `uv add -r requirements.txt` |
+| `pip freeze > requirements.txt` | `uv export -o requirements.txt` |
+| `pip list` | `uv tree` |
+| `pip uninstall <package>` | `uv remove <package>` |
+
+### Direct installation with `uv pip install`
+
+`uv` also supports the traditional `pip install` interface:
+
+```bash
+uv pip install <package>
+uv pip install -r requirements.txt
+```
+
+## Managing Python Versions
+
+`uv` will **detect and use the system Python** by default. You can also install and manage multiple Python versions:
+
+```bash
+# Install the latest Python version
+uv python install
+
+# Install a specific Python version
+uv python install 3.14
+
+# Reinstall all previously installed Python versions
+uv python install --reinstall
+
+# View installed Python versions
+uv python list
+
+# Upgrade all installed Python versions
+uv python upgrade
+
+# Upgrade a specific Python version
+uv python upgrade 3.13
+```
+
+After installation, `uv` automatically adds the installed Python version to your **PATH**:
+
+```powershell
+PS C:\Users\karchunt> python3.13
+Python 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)] on win32
+Type "help", "copyright", "credits" or "license" for more information.
+>>>
+```

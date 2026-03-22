@@ -1,0 +1,71 @@
+---
+title: Git in depth
+description: Understand how Git works internally — key-value storage, SHA-1 hashing, plumbing commands, and Git object types.
+---
+
+## A real Git
+
+At its core, Git is a **key-value store**. When a file is added to a commit, its contents are hashed using the SHA-1 algorithm. That hash becomes the key used to store and retrieve the file's data.
+
+Git commands fall into two categories:
+
+<CardGroup cols={2}>
+  <Card title="Porcelain commands" icon="paint-brush">
+    High-level, user-friendly commands you use every day.
+
+    Examples: `git add`, `git status`, `git commit`, `git stash`
+  </Card>
+  <Card title="Plumbing commands" icon="wrench">
+    Low-level commands that give direct access to Git internals.
+
+    Examples: `git hash-object`, `git cat-file`, `git ls-files`, `git rev-parse`, `git ls-remote`
+  </Card>
+</CardGroup>
+
+## Plumbing commands
+
+### hash-object
+
+`git hash-object` hashes the contents of a file and returns its SHA-1 hash.
+
+```bash
+git hash-object <filename>
+
+# Example
+git hash-object hello
+```
+
+The returned hash (e.g. `492f47831b16c8217339fcb1449345b424c72fcb`) is used as the storage key. The first two characters form the folder name inside `.git/objects/`, and the rest is the file name within that folder.
+
+### cat-file
+
+`git cat-file` reads and displays the contents of a stored Git object by its hash.
+
+```bash
+git cat-file -p <object-hash>
+
+# Example
+git cat-file -p 492f47831b16c8217339fcb1449345b424c72fcb
+```
+
+The `-p` flag pretty-prints the contents.
+
+## Git object types
+
+The `.git/objects/` folder contains three types of objects:
+
+<AccordionGroup>
+  <Accordion title="commit">
+    A commit object stores a snapshot pointer, author information, a timestamp, and a reference to the previous commit. Each commit is identified by a unique hash.
+  </Accordion>
+  <Accordion title="tree">
+    A tree object represents a directory. It maps file names to blob (or other tree) hashes, mirroring the structure of your project's file system.
+  </Accordion>
+  <Accordion title="blob">
+    A blob object stores the raw contents of a file. For example, when you hash a file called `hello`, its contents are stored as a blob.
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  Understanding Git's object model helps you reason about what happens under the hood when you run everyday commands like `git add` and `git commit`.
+</Note>

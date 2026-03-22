@@ -1,0 +1,20 @@
+---
+title: Interactive CLI Applications
+description: Enable interactive mode for tasks that require user input, such as running a text editor or interactive prompt.
+---
+
+Some tasks need to **interact with the user** — for example, launching a text editor or running an interactive prompt. Set `interactive: true` on the task to allow it to receive user input from stdin.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - vim my-file.txt
+    interactive: true
+```
+
+<Note>
+  Without `interactive: true`, tasks that require stdin (like `vim`, `fzf`, or other interactive tools) may not behave correctly.
+</Note>

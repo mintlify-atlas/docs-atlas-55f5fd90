@@ -1,0 +1,91 @@
+---
+title: Environment Variables
+description: Understand Linux environment variables — how to view, create, remove, and manage them, including the critical PATH variable.
+---
+
+Environment variables in Linux are **dynamic values** that affect how running processes behave. They are used to **store configuration settings** that can be accessed by applications and scripts to **modify their behavior** based on the environment they run in.
+
+To view all currently set environment variables, use the `env` command:
+
+```bash
+karchunt@kcserver:~$ env
+SHELL=/bin/bash
+WSL2_GUI_APPS_ENABLED=1
+WSL_DISTRO_NAME=Ubuntu
+NAME=kcserver
+PWD=/home/karchunt
+LOGNAME=karchunt
+HOME=/home/karchunt
+LANG=C.UTF-8
+USER=karchunt
+TERM=xterm-256color
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+...
+```
+
+## Creating Environment Variables
+
+Use the `export` command to create an environment variable in the current shell session:
+
+```bash
+karchunt@kcserver:~$ export MY_VARIABLE="Hello, World!"
+karchunt@kcserver:~$ echo $MY_VARIABLE
+Hello, World!
+```
+
+<Note>
+  Variables created with `export` only persist for the **current session**. When you close the terminal, they are lost.
+</Note>
+
+To **persist an environment variable across reboots**, add the `export` command to your shell's configuration file:
+
+| Scope | File |
+|---|---|
+| Current user | `~/.bashrc`, `~/.profile`, or `~/.bash_profile` |
+| All users (system-wide) | `/etc/environment` or a new file in `/etc/profile.d/` |
+
+## Removing Environment Variables
+
+Use the `unset` command to remove an environment variable:
+
+```bash
+karchunt@kcserver:~$ unset MY_VARIABLE
+karchunt@kcserver:~$ echo $MY_VARIABLE
+
+```
+
+After `unset`, echoing the variable returns an empty string.
+
+## The `PATH` Variable
+
+The `PATH` environment variable is a special variable that **tells the shell where to look for executable files** when you run a command. It contains a **colon-separated** list of directories that the shell searches through in order.
+
+View the current `PATH`:
+
+```bash
+karchunt@kcserver:~$ echo $PATH
+/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+```
+
+To find the path of a specific executable, use `which`:
+
+```bash
+karchunt@kcserver:~$ which python3
+/usr/bin/python3
+```
+
+### Adding a Directory to `PATH`
+
+If a command isn't found, its directory may not be in `PATH`. Append a new directory using `export`:
+
+```bash
+karchunt@kcserver:~$ export PATH=$PATH:/new/directory/path
+```
+
+<Warning>
+  Avoid overwriting `PATH` entirely (e.g. `PATH=/new/path`). Always **append** to the existing value using `$PATH:/new/path` to preserve access to system commands.
+</Warning>
+
+<Tip>
+  To make changes to `PATH` permanent, add the `export` command to your `~/.bashrc` or `~/.profile` file.
+</Tip>

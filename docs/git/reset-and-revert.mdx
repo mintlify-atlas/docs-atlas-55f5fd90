@@ -1,0 +1,104 @@
+---
+title: Reset and revert
+description: Learn how to undo commits in Git using git revert and the three modes of git reset — soft, hard, and mixed.
+---
+
+Sometimes you commit changes you did not intend to commit. Git provides several ways to undo actions:
+
+<CardGroup cols={2}>
+  <Card title="git revert" icon="rotate-left">
+    Creates a new commit that undoes a previous commit. Safe for shared branches — preserves history.
+  </Card>
+  <Card title="git reset" icon="arrow-left">
+    Moves the branch pointer back to an earlier commit. Has three modes: soft, mixed, and hard.
+  </Card>
+</CardGroup>
+
+## Revert
+
+<Info>
+  Use `git revert` when you want to undo a commit while keeping the full Git history intact.
+</Info>
+
+`git revert` creates a **new commit** that reverses all the changes made in the specified commit. The original commit remains in the history.
+
+For example, given this history:
+
+```
+docs: create first story
+docs: create second story
+docs: create programming
+docs: create test         <-- want to undo this
+```
+
+Run:
+
+```bash
+git revert <commit-id>
+```
+
+Git creates a new "Revert" commit that deletes the `test` file, leaving your history as:
+
+```
+docs: create first story
+docs: create second story
+docs: create programming
+docs: create test
+Revert "docs: create test"
+```
+
+## Reset
+
+`git reset` moves the branch pointer back to an earlier commit. There are three modes:
+
+### soft
+
+All changes from the undone commits are **moved to the staging area**. Nothing is lost — you can review and recommit them.
+
+```bash
+git reset --soft <commit-id>
+git reset --soft HEAD~1    # undo the last commit
+```
+
+After a soft reset, run `git status` to see the staged changes.
+
+### hard
+
+<Warning>
+  `git reset --hard` permanently discards all changes from the undone commits. This cannot be undone easily — use with caution.
+</Warning>
+
+All changes from the undone commits are **permanently deleted**.
+
+```bash
+git reset --hard <commit-id>
+git reset --hard HEAD~1    # undo the last commit and discard its changes
+```
+
+### mixed
+
+All changes from the undone commits are **moved to the working directory** (unstaged). This is the default mode if no flag is specified.
+
+```bash
+git reset --mixed <commit-id>
+git reset --mixed HEAD~1   # undo the last commit, keep changes unstaged
+```
+
+After a mixed reset, run `git status` to see the unstaged changes.
+
+## Comparison
+
+<AccordionGroup>
+  <Accordion title="When to use git revert">
+    Use `git revert` when the commit has already been pushed to a shared remote branch. It adds a new commit to undo the change without rewriting history, which is safe for collaboration.
+  </Accordion>
+  <Accordion title="When to use git reset --soft">
+    Use `--soft` when you want to undo a commit but keep all the changes staged and ready to be rewritten into a new commit.
+  </Accordion>
+  <Accordion title="When to use git reset --mixed">
+    Use `--mixed` (the default) when you want to undo a commit and review the changes before deciding what to stage and recommit.
+  </Accordion>
+  <Accordion title="When to use git reset --hard">
+    Use `--hard` only when you are certain you want to permanently discard all changes from the undone commits. This is destructive and cannot be easily undone.
+  </Accordion>
+</AccordionGroup>

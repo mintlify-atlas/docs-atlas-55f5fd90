@@ -1,0 +1,35 @@
+---
+title: Fix Docker permission denied on unix:///var/run/docker.sock
+description: Learn how to fix the Docker permission denied error when trying to connect to the Docker daemon socket at unix:///var/run/docker.sock.
+---
+
+<Warning>
+  You might encounter this issue when you **close and reopen your terminal session** after adding your user to the `docker` group.
+</Warning>
+
+The error `permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock` typically occurs when the current user **does not have the necessary permissions** to access the Docker daemon.
+
+To resolve this issue, **add your user** to the `docker` group, which grants the necessary permissions to interact with the Docker daemon without requiring `sudo` for every command.
+
+## Recommended fix (requires reboot)
+
+```bash
+sudo groupadd docker
+sudo usermod -aG docker $USER
+sudo reboot # It may be necessary to reboot for the changes to take effect.
+
+docker ps # test connection
+```
+
+## Temporary workaround (no reboot)
+
+<Warning>
+  This approach is **not recommended as a permanent solution**. Use it only as a temporary workaround when you need to work immediately without rebooting.
+</Warning>
+
+```bash
+newgrp docker
+sudo chmod 666 /var/run/docker.sock
+
+docker ps # test connection
+```

@@ -1,0 +1,61 @@
+---
+title: Host Configuration
+description: Simplify SSH connections by defining host-specific settings in the ~/.ssh/config file, including aliases, ports, and keep-alive options.
+---
+
+## Host-Specific Configuration File
+
+Instead of typing long SSH commands every time, you can define connection settings in a `config` file located at `~/.ssh/config`. Each host entry acts as an alias for a full SSH command.
+
+```bash
+nano ~/.ssh/config
+```
+
+<Note>
+  You can find the full list of available SSH configuration options in the [ssh_config manual](https://man.cx/ssh_config).
+</Note>
+
+### Configuration File Format
+
+```text
+# Apply settings to all hosts
+Host *
+  ServerAliveInterval 180
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+
+# Define a host alias with full connection details
+Host <remote-alias>
+  HostName <remote-host/ipaddress>
+  Port <port-number>
+  User <username>
+
+# Example: connect to server1 with 'ssh server1'
+Host server1
+  HostName 192.168.0.1
+  Port 22
+  User karchunt
+```
+
+With the example above, you can connect to `server1` simply by running:
+
+```bash
+ssh server1
+```
+
+### Configuration Directives
+
+| Directive | Description |
+| --- | --- |
+| `Host *` | Applies settings to all hosts |
+| `Host <remote-alias>` | A custom name you can call anything you like |
+| `ServerAliveInterval` | Sends a keep-alive packet to the server at this interval (in seconds). Set to `180` to ping every 3 minutes and keep the connection open. |
+| `StrictHostKeyChecking` | When set to `no`, disables host key checking and automatically adds new hosts to `known_hosts` |
+| `UserKnownHostsFile` | Setting to `/dev/null` suppresses warnings about new or changed hosts |
+| `HostName` | The actual remote hostname or IP address |
+| `Port` | The port number used to connect |
+| `User` | The username used to authenticate |
+
+<Warning>
+  Setting `StrictHostKeyChecking no` and `UserKnownHostsFile /dev/null` disables host verification. Only use this in trusted or development environments, as it removes protection against man-in-the-middle attacks.
+</Warning>

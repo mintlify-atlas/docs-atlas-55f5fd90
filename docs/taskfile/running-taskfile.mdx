@@ -1,0 +1,139 @@
+---
+title: Running Taskfile
+description: Learn the various ways to run a Taskfile, including from subdirectories, globally, and from stdin.
+---
+
+The `task` command is used to run a **Taskfile**. By default, it looks for one of the **supported Taskfile names** in the current directory. You can also specify a Taskfile explicitly using the `-t` or `--taskfile` option.
+
+```bash
+task -t <file-path> <task-name>
+task -t directory/ default
+task -t directory/CustomTask.yml custom
+```
+
+## Supported Taskfile Names
+
+- `Taskfile.yml`
+- `taskfile.yml`
+- `Taskfile.yaml`
+- `taskfile.yaml`
+- `Taskfile.dist.yml`
+- `taskfile.dist.yml`
+- `Taskfile.dist.yaml`
+- `taskfile.dist.yaml`
+
+## Run a Taskfile from a Subdirectory
+
+If you are in a subdirectory where no `Taskfile.yml` exists, running the `task` command will **traverse up the directory tree** until it finds a Taskfile or reaches the root.
+
+Given this structure:
+
+```
+main-directory/
+├── Taskfile.yml
+└── sub-directory/
+    └── sample.txt
+```
+
+Running `task` from inside `sub-directory` still works:
+
+```bash title="Demo and output"
+ubuntu@touted-mite:~/main-directory/sub-directory$ task default
+Hello, World!
+```
+
+### Special `{{ .USER_WORKING_DIR }}` Variable
+
+`{{ .USER_WORKING_DIR }}` is a **special variable** containing the path to the directory where the `task` command was run. This lets you run tasks like building a Docker image from any subdirectory **without duplicating Taskfiles**.
+
+<Note>
+  Make sure the subdirectory you `cd` into contains the expected files (e.g., a `Dockerfile`) for the task to work correctly.
+</Note>
+
+Given this structure:
+
+```
+main-directory/
+├── Taskfile.yml
+└── sub-directory/
+    ├── sample.txt
+    └── Dockerfile
+```
+
+```yaml title="Taskfile.yml"
+version: '3'
+
+tasks:
+  build-docker:
+    dir: '{{ .USER_WORKING_DIR }}'
+    cmds:
+      - docker build -t new-image .
+  display-file:
+    dir: '{{ .USER_WORKING_DIR }}'
+    cmds:
+      - cat Dockerfile
+```
+
+```bash title="Demo and output"
+ubuntu@touted-mite:~/main-directory/sub-directory$ task display-file
+task: [display-file] cat Dockerfile
+FROM ubuntu:20
+```
+
+## Run a Global Taskfile
+
+Use the `-g` or `--global` flag to run a Taskfile from the **user's home directory**:
+- `/home/<username>/Taskfile.yml`
+- `C:/Users/<username>/Taskfile.yml`
+
+```yaml title="~/Taskfile.yml"
+version: '3'
+
+tasks:
+  from-home:
+    cmds:
+      - pwd
+
+  from-working-directory:
+    dir: '{{.USER_WORKING_DIR}}'
+    cmds:
+      - pwd
+```
+
+```bash title="Demo and output"
+ubuntu@touted-mite:~$ task -g from-home
+task: [from-home] pwd
+/home/ubuntu
+
+ubuntu@touted-mite:~/main-directory/sub-directory$ task -g from-working-directory
+task: [from-working-directory] pwd
+/home/ubuntu/main-directory/sub-directory
+```
+
+## Read a Taskfile from stdin
+
+This method is useful when **generating Taskfile content dynamically** or running a Taskfile without saving it to disk. Specify both the `-t` flag and a `-` pipe:
+
+```bash
+task -t - <(cat Taskfile.yml)
+
+# Or pipe directly
+cat ./Taskfile.yml | task -t -
+cat ./Taskfile.yml | task -t - <task-name>
+```
+
+<Warning>
+  The path to the Taskfile content must be **correct relative to your working directory**. Using a wrong path will cause an error.
+</Warning>
+
+```bash title="Demo and output"
+# Wrong path
+ubuntu@touted-mite:~/main-directory/sub-directory$ cat ./Taskfile.yml | task -t - display-file
+cat: ./Taskfile.yml: No such file or directory
+task: Missing schema version in Taskfile "__stdin__"
+
+# Correct path
+ubuntu@touted-mite:~/main-directory/sub-directory$ cat ../Taskfile.yml | task -t - display-file
+task: [display-file] cat Dockerfile
+FROM ubuntu:20
+```

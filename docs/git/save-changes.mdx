@@ -1,0 +1,135 @@
+---
+title: Save changes
+description: Learn how to stage, commit, inspect, and discard changes in Git using add, status, commit, log, diff, restore, and .gitignore.
+---
+
+## git add
+
+The `git add` command stages files or directories, telling Git to include those changes in the next commit.
+
+```bash
+git add <file/directory>
+git add .                  # stage all files and directories
+
+# Example
+touch third-story programming   # create new files
+git add third-story
+```
+
+## git status
+
+The `git status` command lists which files are staged, unstaged, and untracked.
+
+```bash
+git status
+```
+
+## git commit
+
+The `git commit` command saves staged changes as a snapshot in the Git project history. Think of commits as milestones along the timeline of your project.
+
+```bash
+git commit                    # opens editor to write a message
+git commit -a                 # auto-stage modified and deleted tracked files
+git commit -m "commit message" # provide message inline
+git commit -am "commit message" # combine -a and -m
+git commit -s                 # sign-off the commit (certifies authorship)
+git commit --amend            # modify the most recent commit
+
+# Example
+git commit -m "docs: create third story"
+```
+
+<Warning>
+  `git commit --amend` rewrites the last commit. Avoid using it on commits that have already been pushed to a shared remote branch.
+</Warning>
+
+## git log
+
+The `git log` command displays the commit history, including:
+
+- Commit hash
+- Author name
+- Date of the commit
+- Commit message
+
+```bash
+git log
+git log --oneline             # compact one-line-per-commit view
+git log --name-only           # list changed files
+git log --graph --decorate    # visual branch graph
+```
+
+## git diff
+
+The `git diff` command shows differences between two data sources such as commits, branches, or files.
+
+```bash
+git diff                                  # all uncommitted changes
+git diff <file>
+git diff HEAD <filename>                  # changes since HEAD
+git diff --staged <filename>              # staged changes only
+git diff --cached <filename>              # alias for --staged
+git diff <commit_hash> <commit_hash>      # between two commits
+git diff <branch> <branch>               # between two branches
+git diff <branch> <branch> <file>        # specific file across branches
+git diff --color-words                    # word-level diff highlighting
+
+# Example
+nano first-story    # write some text
+git diff
+```
+
+### How to read the diff output
+
+```text
+@@ -50,8 +50,12 @@
+```
+
+This means 8 lines were extracted starting from line 50 in the original file, and 12 lines appear starting at line 50 in the new file.
+
+## git restore
+
+The `git restore` command discards changes in the working directory or unstages files that were staged.
+
+```bash
+# Discard working directory changes
+git restore .                                          # all files
+git restore <file>                                     # specific file
+git restore <pattern>                                  # e.g. '*.c'
+
+# Unstage a file
+git restore --staged <file>                            # same as git reset HEAD <file>
+git restore --staged .                                 # unstage everything
+git reset                                              # unstage all
+
+# Restore both index and working tree (same as git checkout)
+git restore --source=HEAD --staged --worktree <file>
+
+# Examples
+git restore first-story
+git restore --staged second-story
+git restore --source=HEAD --staged --worktree second-story
+```
+
+## .gitignore
+
+A `.gitignore` file contains [glob patterns](https://linux.die.net/man/7/glob) that tell Git which files and directories to ignore. Common candidates include:
+
+- Build artifacts: `/bin`, `/target`
+- Machine-generated files: `.pyc`
+- Dependency caches: `node_modules`
+- Log files
+- Secrets and environment files: `.env`
+
+```text .gitignore
+*.log
+.env*
+test.txt
+node_modules/
+/bin
+```
+
+<Tip>
+  Use [gitignore.io](https://www.toptal.com/developers/gitignore) to generate a `.gitignore` for your language or framework, or browse the [GitHub gitignore templates](https://github.com/github/gitignore).
+</Tip>

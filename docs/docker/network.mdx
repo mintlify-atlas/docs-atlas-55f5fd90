@@ -1,0 +1,125 @@
+---
+title: Network
+description: Understand Docker network types — bridge, host, none, overlay, and macvlan — and how containers communicate with each other.
+---
+
+<Info>
+  Docker automatically creates **three networks** after installation:
+  - `bridge`
+  - `host`
+  - `none`
+
+  Two additional network types are also available:
+  - **overlay** — Connects multiple Docker Daemon hosts (Docker running on different machines).
+  - **macvlan** — Assigns a custom MAC address to a container for direct communication.
+</Info>
+
+## Network Types
+
+<Tabs>
+  <Tab title="None">
+    **No network** is attached to the container. The container has no access to any external network or other containers and runs in full isolation with no IP configuration.
+
+    ```bash
+    docker run --network=none ubuntu
+    ```
+  </Tab>
+  <Tab title="Host">
+    The host network driver **removes network isolation** between the Docker host and Docker containers, using the **host's networking** directly. The container **does not get its own IP address**.
+
+    <Info>
+      Container port 80 = Host port 80. No `-p` flag needed.
+    </Info>
+
+    If you run a container that binds to port 80, the application will be available on port 80 of the host's IP directly.
+
+    ```bash
+    docker run --network=host apiapp
+    ```
+  </Tab>
+  <Tab title="Bridge">
+    The **default network** attached to all containers. Docker creates a private internal network called `bridge` on the host (`docker0`, typically `172.17.0.1`). Containers receive an internal IP address in the `172.17.x.x` range.
+
+    <Info>
+      Use `ip addr` to inspect the `docker0` bridge interface.
+    </Info>
+
+    Key properties:
+    - Containers on the same bridge network **can communicate** with each other while remaining isolated from other containers.
+    - Containers can **find each other by name** instead of IP.
+    - Environment variables are **shared** between linked containers.
+
+    ```bash
+    docker run ubuntu  # uses bridge network by default
+    ```
+
+    #### User-Defined Bridge Network
+
+    You can create your own internal network with a custom subnet:
+
+    ```bash
+    docker network create --driver bridge --subnet 192.168.10.0/24 mynewinternalnetwork
+    ```
+
+    This creates a network with an IP range of `192.168.10.1–192.168.10.254`.
+  </Tab>
+</Tabs>
+
+## Network Operations
+
+### List networks
+
+```bash
+docker network ls
+```
+
+### Inspect a network
+
+```bash
+docker network inspect <network-name>
+```
+
+### Remove a network
+
+```bash
+docker network rm <network-name>
+docker network prune  # remove all unused networks
+```
+
+### Connect / Disconnect a container
+
+```bash
+docker network connect <network-name> <container>
+docker network disconnect <network-name> <container>
+```
+
+## Container Communication
+
+### Container to host communication
+
+To communicate with services on the host machine from inside a container, replace `localhost` or the host IP with **`host.docker.internal`**. This domain resolves to the host machine's IP as seen from inside the container.
+
+**Example:** Change `mongodb://localhost:27017/user` to `mongodb://host.docker.internal:27017/user`.
+
+### Container to container communication
+
+<Tabs>
+  <Tab title="Method 1 (Not Recommended)">
+    Use `docker inspect <container>` to find the container's IP address, then hardcode it:
+
+    ```
+    mongodb://172.17.0.3:27017/user
+    ```
+
+    This is fragile because container IPs can change.
+  </Tab>
+  <Tab title="Method 2 (Recommended)">
+    Use the **container name** instead of an IP address. Docker resolves container names to their allocated IPs via `docker0`.
+
+    ```
+    mongodb://mymongodb:27017/user
+    ```
+
+    Containers must be on the **same network** for name-based resolution to work.
+  </Tab>
+</Tabs>

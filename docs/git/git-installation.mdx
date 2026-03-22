@@ -1,0 +1,64 @@
+---
+title: Git installation
+description: Step-by-step instructions for installing Git on Windows and Ubuntu/Linux, and configuring your identity.
+---
+
+<Tabs>
+  <Tab title="Windows">
+    <Steps>
+      <Step title="Download the installer">
+        Go to [git-scm.com/download/win](https://www.git-scm.com/download/win) and select your installer. For most users, choose **64-bit Git for Windows Setup**.
+      </Step>
+      <Step title="Run the installer">
+        Open the downloaded `.exe` file and follow the setup wizard. Leaving all options at their defaults is recommended.
+      </Step>
+      <Step title="Verify the installation">
+        Open your terminal and run:
+
+        ```bash
+        git --version
+        ```
+
+        This will display the installed Git version.
+      </Step>
+      <Step title="Configure your identity">
+        Set your username and email. These details are attached to every commit you make.
+
+        ```bash
+        git config --global user.name "Your Name"
+        git config --global user.email "your.email@example.com"
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Ubuntu / Linux">
+    <Steps>
+      <Step title="Add the PPA and install Git">
+        The default package manager may not install the latest version. Use the official PPA to get the latest stable release:
+
+        ```bash
+        sudo add-apt-repository ppa:git-core/ppa
+        sudo apt-get update
+        sudo apt-get install -y git
+        ```
+      </Step>
+      <Step title="Verify the installation">
+        ```bash
+        git --version
+        ```
+      </Step>
+      <Step title="Configure your identity">
+        Set your username and email. These details are attached to every commit you make.
+
+        ```bash
+        git config --global user.name "Your Name"
+        git config --global user.email "your.email@example.com"
+        ```
+      </Step>
+    </Steps>
+
+    <Note>
+      The PPA (`ppa:git-core/ppa`) is the recommended source for the latest stable Git on Ubuntu. See the [PPA page](https://launchpad.net/~git-core/+archive/ubuntu/ppa) for more details.
+    </Note>
+  </Tab>
+</Tabs>

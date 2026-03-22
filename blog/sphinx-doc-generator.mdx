@@ -1,0 +1,194 @@
+---
+title: Sphinx Documentation Generator
+description: A step-by-step guide to creating, building, and customizing documentation with Sphinx — from installation through live preview and theming.
+---
+
+<Note>
+  Sphinx is a documentation generator widely used for Python projects. It converts `reStructuredText` files into various output formats including **HTML** and **PDF**, and is highly extensible via plugins and themes.
+</Note>
+
+<Steps>
+
+### Install Sphinx
+
+Sphinx can be installed via `pip`, `conda`, or `uv`. This guide uses `uv`:
+
+```bash
+uv init --bare
+uv add sphinx
+
+# Verify the installation
+uv run sphinx-build --version
+```
+
+### Create a New Sphinx Project
+
+The `sphinx-quickstart` command walks you through the initial setup, creating a source directory and a default `conf.py`.
+
+```bash
+uv run sphinx-quickstart
+```
+
+Sample interactive output:
+
+```powershell
+Welcome to the Sphinx 8.2.3 quickstart utility.
+
+Please enter values for the following settings (just press Enter to
+accept a default value, if one is given in brackets).
+
+Selected root path: .
+
+You have two options for placing the build directory for Sphinx output.
+Either, you use a directory "_build" within the root path, or you separate
+"source" and "build" directories within the root path.
+> Separate source and build directories (y/n) [n]: n
+
+The project name will occur in several places in the built documentation.
+> Project name: sphinx-tutorial
+> Author name(s): karchunt
+> Project release []:
+> Project language [en]:
+
+Creating file conf.py.
+Creating file index.rst.
+Creating file Makefile.
+Creating file make.bat.
+
+Finished: An initial directory structure has been created.
+```
+
+### Build a Live Documentation Preview
+
+`sphinx-autobuild` rebuilds your docs and refreshes the browser automatically whenever source files change.
+
+```bash
+uv add sphinx-autobuild
+uv run sphinx-autobuild ./ output
+```
+
+Sample output:
+
+```powershell
+[sphinx-autobuild] Starting initial build
+[sphinx-autobuild] > python -m sphinx build ./ output
+Running Sphinx v8.2.3
+build succeeded.
+
+The HTML pages are in output.
+[sphinx-autobuild] Serving on http://127.0.0.1:8000
+[sphinx-autobuild] Waiting to detect changes...
+```
+
+Open your browser and navigate to `http://127.0.0.1:8000`.
+
+### Document Your Project
+
+Edit `index.rst` and add additional `.rst` files as needed. Below are examples of the three common files:
+
+<CodeGroup>
+
+```rst title="index.rst"
+Welcome to KarChunT's documentation!
+====================================
+
+This is just a demo documentation by using **Sphinx**. Here is the `Reference <https://www.sphinx-doc.org/en/master/>`_ to Sphinx official website.
+
+.. note::
+
+  This project is under testing, so the content is very limited.
+
+  Check out the :doc:`docs/usage` section for further information, including how to :ref:`install <installation>` the project.
+
+  For API documentation and code examples, see the :doc:`docs/code` section.
+
+Contents
+--------
+
+.. toctree::
+  docs/usage
+  docs/code
+```
+
+```rst title="docs/usage.rst"
+Usage
+=====
+
+.. _installation:
+
+Installation
+------------
+
+To use Lumache, first install it using pip:
+
+.. code-block:: console
+
+  (.venv) $ pip install lumache
+```
+
+```rst title="docs/code.rst"
+Code
+====
+
+To document Python objects, use the ``py:function`` directive:
+
+.. py:function:: add_numbers(a, b)
+
+    Adds two numbers and returns the result.
+
+    :param a: The first number.
+    :param b: The second number.
+    :type a: int or float
+    :type b: int or float
+    :return: The sum of the two numbers.
+    :rtype: int or float
+    :raises TypeError: If either a or b is not a number.
+
+Cross-reference the function elsewhere with the ``:py:func:`` role:
+
+You can use the :py:func:`add_numbers` function to add two numbers together.
+```
+
+</CodeGroup>
+
+### (Optional) Customize the Theme
+
+Sphinx ships with several built-in themes and supports third-party themes. The popular **Read the Docs** theme is a common choice.
+
+```bash
+uv add sphinx_rtd_theme
+```
+
+Update `conf.py` to activate it:
+
+```python title="conf.py"
+extensions = [
+    # ... other extensions
+    'sphinx_rtd_theme',
+]
+
+html_theme = "sphinx_rtd_theme"
+```
+
+### Build the Documentation
+
+Once your content is ready, build to your target format:
+
+```bash
+# Using sphinx-build directly
+uv run sphinx-build -M html ./ output
+
+# Using the Makefile (Linux/macOS)
+make html
+
+# Using the Makefile (Windows)
+./make.bat html
+```
+
+<Tip>
+  Replace `html` with any supported builder name (e.g. `latex`, `linkcheck`). See the [Sphinx builders list](https://www.sphinx-doc.org/en/master/usage/builders/index.html#builders) for all options.
+</Tip>
+
+After building, you can host the output on **GitHub Pages**, **Read the Docs**, or your own web server. Refer to the [official Sphinx deployment guide](https://www.sphinx-doc.org/en/master/tutorial/deploying.html) for details.
+
+</Steps>

@@ -1,0 +1,61 @@
+---
+title: Generative Art
+description: A Python project that creates unique generative art images using mathematical algorithms, with GitHub Actions automation for scheduling and README updates.
+---
+
+## Introduction
+
+Generative Art is a **Python-based** project that **creates stunning images using mathematical algorithms and randomization**. Key features include:
+
+- **Generates unique images** using mathematical functions
+- **Automatically updates** the `README.md` with a grid layout of generated images
+- **Automates workflows** for generating and deleting art via GitHub Actions
+
+### Built With
+
+- [Python](https://www.python.org/)
+- [Samila](https://www.samila.site/) — generative art library
+- [GitHub Actions](https://docs.github.com/en/actions)
+- [Black](https://github.com/psf/black) — code formatter
+- [nektos/act](https://github.com/nektos/act) — run GitHub Actions locally
+
+## How It Works
+
+The project uses [Samila](https://www.samila.site/) to create generative art. GitHub Actions automates image generation on a **schedule**, storing results in `output/images/` and updating the `README.md` with a grid layout. `nektos/act` is used to **test GitHub Actions workflows locally** before pushing to the repository.
+
+## Getting Started
+
+<Steps>
+
+### Clone the repository
+
+```bash
+git clone https://github.com/KarChunT/i-love-i-like-i-build.git
+cd i-love-i-like-i-build/projects/generative-art
+```
+
+### Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Run the script
+
+```bash
+python main.py --help          # show help
+python main.py generate-art    # generate art images
+python main.py generate-readme # update README with generated images
+python main.py delete-art      # delete generated art
+```
+
+### (Optional) Run GitHub Actions locally
+
+Use `nektos/act` to test the automation workflows without pushing to GitHub:
+
+```bash
+act -W '.github/workflows/delete_art.yaml' -e act/delete-art-payload.json
+act -W '.github/workflows/generate_art.yaml' -e act/generate-art-payload.json
+```
+
+</Steps>

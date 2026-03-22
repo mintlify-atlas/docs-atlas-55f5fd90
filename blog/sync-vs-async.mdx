@@ -1,0 +1,142 @@
+---
+title: Sync vs Async in Programming
+description: Learn the differences between synchronous and asynchronous programming, their use cases, and how they impact application performance.
+---
+
+In programming, **"synchronous"** and **"asynchronous"** refer to two different approaches to **handling tasks and operations**. Understanding the differences is crucial for writing efficient, high-performance applications — especially those that are **I/O-bound** (network requests, file operations, database queries) or require **concurrency**.
+
+<Info>
+  **Choose Synchronous when:**
+  - Tasks are **CPU-bound** and require heavy computation (e.g., mathematical calculations, data processing, training ML models, encrypting large files)
+  - The application is **simple** and requires a **straightforward flow** of execution
+</Info>
+
+<Info>
+  **Choose Asynchronous when:**
+  - Tasks are **I/O-bound** and involve waiting for input/output operations (e.g., external API calls, database queries, file reading/writing, web scraping)
+  - The application needs to **maximize resource utilization** using a single thread and handle many concurrent connections
+</Info>
+
+| Feature | Synchronous | Asynchronous |
+|---------|-------------|---------------|
+| Execution Model | Sequential (one task at a time) | Concurrent (multiple tasks at the same time) |
+| Blocking Behavior | Blocking (pauses the thread) | Non-blocking (yields control to other tasks) |
+| Complexity | Simpler, easier to read and debug | More complex, harder to read and debug |
+| Best For | CPU-bound tasks (calculations, data processing) | I/O-bound tasks (APIs, file ops, database queries) |
+| Core Tools | Standard Python functions | `asyncio`, `async/await`, `aiohttp` |
+
+<Warning>
+  **Async is not always faster than sync.** They are designed to handle different types of tasks more efficiently. The right choice depends on your specific use case and requirements.
+</Warning>
+
+## Synchronous: Blocking Operations
+
+In synchronous programming, **tasks execute one after the other (sequentially)**. A task must fully complete before the next one begins. Key characteristics:
+
+- **Sequential execution**: Code runs line-by-line in the order written.
+- **Blocking**: When waiting for I/O, the entire program is paused.
+- **Simplicity**: Easier to read and debug due to its linear flow.
+
+<Info>
+  **What are I/O-bound operations?**
+  These are tasks where the program **spends more time waiting for I/O to complete** than using the CPU. Examples include:
+  - Reading large data from disk
+  - Making network requests to fetch data
+  - Querying a database
+  - Waiting for a server response
+</Info>
+
+Imagine a single line of people ordering coffee. The barista can only handle one customer at a time — if the first order takes 5 minutes, everyone else waits.
+
+```python title="synchronous_example.py"
+import time
+
+def fetch_sync(url: str):
+    # Simulate a network request
+    print(f"Fetching {url}")
+    time.sleep(3)
+    return len(f"Data from {url}")
+
+def run_sync():
+    start_time = time.time()
+
+    # Task 1: Fetch endpoint A (3 seconds)
+    data_a = fetch_sync("Endpoint A")
+
+    # Task 2: Fetch endpoint B (3 seconds)
+    data_b = fetch_sync("Endpoint B")
+
+    total_time = time.time() - start_time
+    print(f"\nTotal synchronous time: {total_time:.2f} seconds")
+    print(f"Data A size: {data_a}, Data B size: {data_b}")
+
+if __name__ == "__main__":
+    run_sync()
+```
+
+Total time: approximately **6 seconds** (3 seconds per task, executed sequentially).
+
+```text
+Fetching Endpoint A
+Fetching Endpoint B
+
+Total synchronous time: 6.00 seconds
+Data A size: 20, Data B size: 20
+```
+
+## Asynchronous: Non-Blocking Operations
+
+In asynchronous programming, **tasks execute concurrently**, allowing a **single thread to handle multiple tasks** at once. Key characteristics:
+
+- **Concurrent execution**: Multiple tasks can be in progress simultaneously.
+- **Non-blocking**: While waiting for I/O, other tasks can continue executing.
+- **Complexity**: More challenging to read and debug due to non-linear flow.
+
+<Info>
+  **Key concepts of async:**
+  - **Event Loop**: The heart of async programming. Monitors tasks and dispatches them when ready — orchestrates when tasks pause (yield control) and when they resume.
+  - **`async def`**: Defines an asynchronous function (coroutine — a function that can be paused and resumed).
+  - **`await`**: Pauses the coroutine and yields control to the event loop until the awaited task completes. Other waiting tasks can run during this time.
+</Info>
+
+Same coffee shop, but now the barista takes order 1 and while the machine brews it, takes order 2. When order 1 is ready, it's served immediately — no unnecessary waiting.
+
+```python title="asynchronous_example.py"
+import time
+import asyncio
+
+async def fetch_async(url: str):
+    # Simulate a network request
+    print(f"Fetching {url}")
+    await asyncio.sleep(3)
+    return len(f"Data from {url}")
+
+async def run_async():
+    start_time = time.time()
+
+    results = await asyncio.gather(
+        fetch_async("Endpoint A"),
+        fetch_async("Endpoint B")
+    )
+
+    total_time = time.time() - start_time
+    print(f"\nTotal asynchronous time: {total_time:.2f} seconds")
+    print(f"Data A size: {results[0]}, Data B size: {results[1]}")
+
+if __name__ == "__main__":
+    asyncio.run(run_async())
+```
+
+Total time: approximately **3 seconds** because both tasks run concurrently.
+
+- `asyncio.sleep()` — simulates an async wait, allowing other tasks to run (unlike `time.sleep()` which blocks)
+- `asyncio.gather()` — runs multiple async tasks concurrently and waits for all to complete
+- When the first task hits `await asyncio.sleep(3)`, it yields control to the event loop, letting the second task start immediately
+
+```text
+Fetching Endpoint A
+Fetching Endpoint B
+
+Total asynchronous time: 3.01 seconds
+Data A size: 20, Data B size: 20
+```

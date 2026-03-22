@@ -1,0 +1,51 @@
+---
+title: Setup RDP on Ubuntu
+description: Learn how to set up Remote Desktop Protocol (RDP) on Ubuntu using the built-in remote desktop feature or by installing xrdp.
+---
+
+To set up Remote Desktop Protocol (RDP) on Ubuntu, you can use the **built-in Remote Desktop sharing** feature or install a third-party RDP server like `xrdp`.
+
+## Method 1: Built-in Remote Desktop Sharing
+
+<Info>
+  This method only **allows one active session** at a time. If someone is logged in locally, a remote user cannot connect until the local user logs out.
+</Info>
+
+<Note>
+  The steps below are based on **Ubuntu 24.04 LTS**. The UI may differ slightly on other versions.
+</Note>
+
+<Steps>
+  ### Open Remote Desktop settings
+
+  Go to **Settings > System > Remote Desktop**.
+
+  ### Enable Remote Desktop
+
+  Toggle the switch to enable **Remote Desktop** and configure the settings as needed (username, password).
+
+  ### Enable Remote Login (optional)
+
+  Enable **Remote Login** and set up login details if you want to allow remote connections without a local session.
+
+  ### Open the firewall port
+
+  If you have a firewall configured, allow RDP connections on port **3389**:
+
+  ```bash
+  sudo ufw allow 3389/tcp
+  ```
+</Steps>
+
+## Method 2: Install xrdp
+
+This method **allows multiple users to connect simultaneously** by creating separate remote sessions that do not interfere with the local session. Each user gets their own isolated desktop environment.
+
+```bash
+sudo apt update && sudo apt install -y xrdp
+sudo systemctl enable xrdp
+sudo systemctl start xrdp
+
+# Allow RDP through the firewall
+sudo ufw allow 3389/tcp
+```

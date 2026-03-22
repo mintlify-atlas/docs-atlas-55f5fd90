@@ -1,0 +1,36 @@
+---
+title: No module named apt_pkg
+description: Learn how to resolve the "No module named apt_pkg" error in Python on Debian-based Linux distributions.
+---
+
+The error **"No module named apt_pkg"** typically occurs when the **Python APT package is not installed** or is **improperly configured**. This package is essential for interacting with the Advanced Package Tool (APT) system in Debian-based Linux distributions.
+
+## Method 1: Install the `python-apt` package
+
+This is the most straightforward fix — the `apt_pkg` module is part of the `python-apt` package.
+
+```bash
+sudo apt-get update
+sudo apt-get install python-apt  # or python3-apt for Python 3
+```
+
+## Method 2: Reinstall `python3-apt`
+
+This reinstalls the package to ensure all files are correctly placed.
+
+```bash
+sudo apt-get install python3-apt --reinstall
+```
+
+## Method 3: Copy the `.so` file to the correct location
+
+This method involves copying the shared object file to the correct location.
+
+```bash
+cd /usr/lib/python3/dist-packages
+sudo cp apt_pkg.cpython-310-x86_64-linux-gnu.so apt_pkg.so
+```
+
+<Note>
+  Adjust the filename to match your Python version and architecture (e.g., `cpython-311` for Python 3.11).
+</Note>

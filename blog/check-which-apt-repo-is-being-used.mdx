@@ -1,0 +1,74 @@
+---
+title: Check Which APT Repo Is Being Used
+description: Learn how to determine which APT repository a package is being installed from when multiple repositories are configured.
+---
+
+When you have multiple APT repositories configured for the same software, it's important to know which one is being used — especially after adding a new repository while the system still uses an older one.
+
+<Steps>
+  ### Check the pinned priority
+
+  APT uses the repository with the highest priority. Check priorities with:
+
+  ```bash
+  apt-cache policy
+  ```
+
+  To check the priority for a specific package (e.g., `docker-ce`):
+
+  ```bash
+  apt-cache policy docker-ce
+  ```
+
+  Sample output:
+
+  ```text
+  docker-ce:
+    Installed: (none)
+    Candidate: 5:20.10.24~3-0~ubuntu-jammy
+    Version table:
+       5:20.10.24~3-0~ubuntu-jammy 500
+          500 https://download.docker.com/linux/ubuntu jammy/stable amd64 Packages
+       5:20.10.24~3-0~ubuntu-focal 500
+          500 https://download.docker.com/linux/ubuntu focal/stable amd64 Packages
+  ```
+
+  The **Candidate version** indicates **which repository is being used**.
+
+  ### Inspect the installed package source
+
+  If the package is already installed, check which repository it came from:
+
+  ```bash
+  apt-cache policy docker-ce
+  ```
+
+  ### Manually manage repository files
+
+  If you want to ensure only one repository is used, comment out or remove the unwanted entry:
+
+  ```bash
+  sudo nano /etc/apt/sources.list.d/download_docker_com_linux_ubuntu.list
+  ```
+
+  Comment out the unwanted line:
+
+  ```bash
+  # deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+  deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable
+  ```
+
+  Then update the package cache:
+
+  ```bash
+  sudo apt update
+  ```
+
+  ### Verify the repository again
+
+  After making changes, confirm the correct repository is being used:
+
+  ```bash
+  apt-cache policy docker-ce
+  ```
+</Steps>

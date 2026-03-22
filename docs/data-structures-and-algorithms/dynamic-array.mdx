@@ -1,0 +1,168 @@
+---
+title: Dynamic Array
+description: Learn about dynamic arrays — resizable arrays that automatically grow when full — including how resize works, amortized complexity, and a full Python implementation.
+---
+
+## What is a Dynamic Array?
+
+A **dynamic array** is a **resizable array** that can **grow and shrink** in size at runtime. Unlike a static array, you don't need to specify the size upfront. When the array reaches its capacity, it **allocates a new array** with a larger size (typically **double the current capacity**) and **copies elements** from the old array to the new one.
+
+<Note>
+  No need to specify the array size at initialization.
+</Note>
+
+## Time Complexity
+
+| Operation | Big-O | Notes |
+| --------- | ----- | ----- |
+| Access | O(1) | Direct index-to-address mapping |
+| Insert / Remove End | O(1) amortized | Occasional O(n) resize, but rare |
+| Insert / Remove Middle | O(n) | Subsequent elements must be shifted |
+
+<CardGroup cols={2}>
+  <Card title="Advantages">
+    - Can **grow and shrink** dynamically, more flexible than static arrays
+    - Efficient O(1) index-based access
+  </Card>
+  <Card title="Disadvantages">
+    - **Resizing can be costly** in terms of time and memory
+    - Insertion and deletion in the **middle** require element shifting O(n)
+  </Card>
+</CardGroup>
+
+## How Dynamic Array Operations Work
+
+### Inserting an Element
+
+When inserting a new element, first check if `count == capacity`. If so, **resize** before inserting.
+
+```python
+# count = current number of elements
+# capacity = total allocated size
+def insert(index: int, value: int) -> None:
+    if count == capacity:
+        resize()
+
+    # Shift elements to the right to make space
+    for i in range(count, index, -1):
+        dynamic_array[i] = dynamic_array[i - 1]
+
+    # Insert the new element and increment count
+    dynamic_array[index] = value
+    count += 1
+```
+
+### Resizing the Array
+
+When the array is full, a **new array with double the capacity** is created, all elements are **copied** over, and the old array is **deallocated**.
+
+```python
+# count = current number of elements
+# capacity = total allocated size
+def resize() -> None:
+    capacity = capacity * 2
+    new_array = [None] * capacity
+    for i in range(count):
+        new_array[i] = dynamic_array[i]
+    dynamic_array = new_array
+```
+
+<Note>
+  **Amortized O(1) Complexity**
+
+  Resizing is O(n) — expensive but **rare**. Adding an element is O(1) — cheap and **frequent**.
+
+  Because the array doubles in size each time it resizes, resize events happen at sizes 1, 2, 4, 8, 16... Averaged over all insertions, the **amortized time per operation is O(1)**.
+
+  - O(n) resize: expensive but infrequent
+  - O(1) append: cheap and frequent
+  - **Result: O(1) amortized per insertion**
+</Note>
+
+## Dynamic Array Class Implementation
+
+```python title="dynamic_array.py"
+class DynamicArray:
+    def __init__(self, capacity: int = 4):
+        if not isinstance(capacity, int) or capacity <= 0:
+            raise ValueError("Capacity must be a positive integer.")
+        self._items = [None] * capacity  # Initial allocation
+        self._capacity = capacity
+        self._count = 0  # Track the current number of elements
+
+    def __len__(self) -> int:
+        return self._count
+
+    def __getitem__(self, index: int) -> int:
+        if not 0 <= index < self._count:
+            raise IndexError("Index out of bounds.")
+        return self._items[index]
+
+    def __setitem__(self, index: int, value: int) -> None:
+        if not 0 <= index < self._count:
+            raise IndexError("Index out of bounds.")
+        self._items[index] = value
+
+    def append(self, value: int) -> None:
+        if self._count == self._capacity:
+            self._resize()
+        self._items[self._count] = value
+        self._count += 1
+
+    def insert(self, index: int, value: int) -> None:
+        if not 0 <= index <= self._count:
+            raise IndexError("Index out of bounds.")
+        if self._count == self._capacity:
+            self._resize()
+        for i in range(self._count, index, -1):
+            self._items[i] = self._items[i - 1]
+        self._items[index] = value
+        self._count += 1
+
+    def remove(self, index: int) -> int:
+        if not 0 <= index < self._count:
+            raise IndexError("Index out of bounds.")
+        value = self._items[index]
+        for i in range(index, self._count - 1):
+            self._items[i] = self._items[i + 1]
+        self._items[self._count - 1] = None
+        self._count -= 1
+        return value
+
+    def traverse(self) -> None:
+        for i in range(self._count):
+            print(self._items[i], end=' ')
+        print()
+
+    def _resize(self) -> None:
+        self._capacity = self._capacity * 2
+        new_array = [None] * self._capacity
+        for i in range(self._count):
+            new_array[i] = self._items[i]
+        self._items = new_array
+
+# Example usage
+my_array = DynamicArray()
+my_array.append(1)
+my_array.append(2)
+my_array.append(3)
+my_array.append(4)
+
+my_array.traverse()   # Output: 1 2 3 4
+
+my_array.insert(1, 5)
+my_array.traverse()   # Output: 1 5 2 3 4
+
+my_array.remove(2)
+my_array.traverse()   # Output: 1 5 3 4
+```
+
+## Static vs Dynamic Array
+
+| Feature | Static Array | Dynamic Array |
+| ------- | ------------ | ------------- |
+| Size | Fixed at creation | Grows automatically |
+| Memory | Allocated at compile time | Allocated at runtime |
+| Resize | Not possible | Doubles when full (O(n) resize, O(1) amortized) |
+| Overhead | Lower | Slightly higher due to capacity tracking |
+| Use case | Known fixed-size data | Unknown or variable-size data |

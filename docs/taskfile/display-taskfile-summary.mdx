@@ -1,0 +1,67 @@
+---
+title: Display Taskfile Summary
+description: View a detailed summary of any task including its description, dependencies, and commands using the --summary flag.
+---
+
+Use the `--summary` flag to display a **detailed overview of a task**, including its name, description, dependencies, and commands.
+
+<Note>
+  If a summary is not defined, the task's `desc` will be shown instead. If neither is available, a warning is printed.
+</Note>
+
+```yaml title="Taskfile.yml"
+version: '3'
+tasks:
+  deploy:
+    desc: Deploy the application
+    deps: [build]
+    summary: |
+      This task deploys the application after building it.
+
+      It ensures that all necessary components are in place before deployment.
+    cmds:
+      - echo "Deploying application..."
+
+  build:
+    desc: Build the application
+    cmds:
+      - echo "Building application..."
+
+  test:
+    cmds:
+      - echo "Running tests..."
+```
+
+```bash title="Demo and Output"
+# Summary for a task with a custom summary
+ubuntu@touted-mite:~$ task --summary deploy
+task: deploy
+
+This task deploys the application after building it.
+
+It ensures that all necessary components are in place before deployment.
+
+dependencies:
+ - build
+
+commands:
+ - echo "Deploying application..."
+
+# Summary falls back to desc when no summary is set
+ubuntu@touted-mite:~$ task --summary build
+task: build
+
+Build the application
+
+commands:
+ - echo "Building application..."
+
+# Warning when neither summary nor desc is set
+ubuntu@touted-mite:~$ task --summary test
+task: test
+
+(task does not have description or summary)
+
+commands:
+ - echo "Running tests..."
+```

@@ -1,0 +1,64 @@
+---
+title: Remote Tunneling
+description: Use SSH remote port forwarding to expose your local machine's services to a remote server through a secure SSH tunnel.
+---
+
+## Remote Tunneling to a Server
+
+<Info>
+  The concept is the same as local tunneling, but in reverse — the remote server gains access to your local machine's services.
+</Info>
+
+Remote tunneling (remote port forwarding) opens a port on the **remote server** that forwards traffic back to your **local machine**. Use the `-R` flag and provide:
+
+- A **remote port** to listen on
+- The **local host** IP or hostname to forward to
+- The **local port** to forward to
+
+```bash
+# General syntax
+ssh -f -N -R <remote-port>:<local-host-ip-address/name>:<local-port> <username>@<remote-host-ip-address/name/gateway>
+
+# Example: expose localhost:8080 on the remote server at port 8080
+ssh -R 8080:localhost:8080 user@remote-host-ip-address
+```
+
+After running this command, visiting `localhost:8080` from a browser or `curl` **on the remote server** will serve content hosted on your local machine at port 8080.
+
+### Parameters
+
+| Parameter | Description |
+| --- | --- |
+| `-R` | Establish a remote tunnel to the remote server |
+
+## Remote Tunneling — Local Network
+
+You can expose a local network service to the remote host.
+
+```bash
+# Forward your localhost:8080 to port 8080 on the remote host
+ssh -R 8080:localhost:8080 user@remote-host-ip-address
+
+# Bind to all interfaces on the remote host (0.0.0.0)
+ssh -R 0.0.0.0:8080:localhost:8080 user@remote-host-ip-address
+```
+
+<Note>
+  Using `0.0.0.0` as the bind address makes the remote port accessible from any interface on the remote server, not just localhost. This requires `GatewayPorts yes` to be set in the server's `sshd_config`.
+</Note>
+
+## Remote Tunneling — Private Network
+
+You can also expose a service on your local **private network** to the remote host.
+
+```bash
+# Forward a local private network server to the remote host
+ssh -R 8080:<local-server-ip-address>:8080 user@remote-host-ip-address
+
+# Bind to all remote interfaces
+ssh -R 0.0.0.0:8080:<local-server-ip-address>:8080 user@remote-host-ip-address
+```
+
+<Tip>
+  Remote tunneling is commonly used to temporarily expose a local development server to the internet for testing, demos, or webhook integrations.
+</Tip>

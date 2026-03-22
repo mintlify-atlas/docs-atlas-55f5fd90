@@ -1,0 +1,87 @@
+---
+title: Setup SSH on Ubuntu
+description: Learn how to set up SSH on Ubuntu using best practices for secure remote access, including key-based authentication, firewall configuration, and service hardening.
+---
+
+**SSH (Secure Shell)** is a protocol that allows **secure remote access** to a computer over an unsecured network. This guide walks you through the **best practices** for setting up SSH on an Ubuntu system.
+
+<Steps>
+
+### Install OpenSSH Server
+
+```bash
+sudo apt-get update
+sudo apt-get install -y openssh-server
+```
+
+### Start and Enable the SSH Service
+
+```bash
+sudo systemctl enable ssh
+sudo systemctl start ssh
+sudo systemctl status ssh
+```
+
+### Configure SSH Settings
+
+Open the SSH configuration file:
+
+```bash
+sudo nano /etc/ssh/sshd_config
+```
+
+Apply the following hardening settings:
+
+```bash title="/etc/ssh/sshd_config"
+PasswordAuthentication no
+PermitRootLogin no
+AllowUsers user1 user2 user3
+AllowGroups sshusers
+```
+
+<Note>
+  - `PasswordAuthentication no` — disables password auth in favour of key-based authentication.
+  - `PermitRootLogin no` — prevents direct root login via SSH.
+  - `AllowUsers` / `AllowGroups` — restricts SSH access to specific users or groups.
+</Note>
+
+### Restart the SSH Service
+
+```bash
+sudo systemctl restart ssh
+```
+
+### Configure the Firewall
+
+Ubuntu uses **UFW (Uncomplicated Firewall)** by default. When UFW is enabled it blocks all inbound connections — including SSH — unless explicitly allowed.
+
+```bash
+sudo ufw allow ssh
+sudo ufw enable
+sudo ufw status
+```
+
+Expected output:
+
+```bash
+Status: active
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW       Anywhere
+22/tcp (v6)                ALLOW       Anywhere (v6)
+```
+
+<Warning>
+  Ensure you allow SSH **before** enabling UFW, otherwise you will be locked out of your server.
+</Warning>
+
+### Reboot the Server
+
+Reboot to confirm all changes take effect cleanly.
+
+```bash
+sudo reboot
+```
+
+</Steps>

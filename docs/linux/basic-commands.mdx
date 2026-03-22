@@ -1,0 +1,295 @@
+---
+title: Basic Commands
+description: A reference guide to essential Linux commands for navigating the filesystem, managing files and directories, and viewing file contents.
+---
+
+<Note>
+  You can use `command --help` or `man command` for more information about any command.
+</Note>
+
+## Navigation
+
+### pwd
+
+`pwd` stands for **print working directory**. It displays the absolute path of the directory you are currently in.
+
+```bash
+kc@kcserver:~$ pwd
+/home/kc
+```
+
+### cd
+
+`cd` stands for **change directory**. It is used to navigate between directories.
+
+<Note>
+  An **absolute path** starts from the root directory `/`, while a **relative path** is relative to the current working directory.
+</Note>
+
+<Tabs>
+  <Tab title="Move up one level">
+    ```bash
+    karchunt@kcserver:~/folder3$ cd ..
+    karchunt@kcserver:~$
+    ```
+  </Tab>
+  <Tab title="Go to home directory">
+    ```bash
+    karchunt@kcserver:~/folder3$ cd
+    karchunt@kcserver:~$
+    ```
+    You can also use `cd ~` — both navigate to your home directory.
+  </Tab>
+  <Tab title="Navigate to a specific path">
+    ```bash
+    karchunt@kcserver:~$ cd folder3/innerfolder
+    karchunt@kcserver:~/folder3/innerfolder$
+    ```
+  </Tab>
+</Tabs>
+
+### ls
+
+`ls` lists the files and directories in the current directory or a specified directory.
+
+```bash
+karchunt@kcserver:~$ ls
+folder1  folder2  newfile.txt
+
+karchunt@kcserver:~$ ls folder1
+newname.txt
+```
+
+Useful `ls` options:
+
+| Option | Description |
+|---|---|
+| `-l` | Long listing format with detailed info |
+| `-a` | Show all files, including hidden files (`.` prefix) |
+| `-h` | Human-readable file sizes (KB, MB, etc.) |
+| `-t` | Sort by modification time, newest first |
+| `-r` | Reverse the sort order |
+
+Combining options:
+
+```bash
+karchunt@DESKTOP-CCAQ09F:~$ ls -lahtr
+total 68K
+drwxr-xr-x 3 root     root     4.0K Nov  1 17:37 ..
+-rw-r--r-- 1 karchunt karchunt  807 Nov  1 17:37 .profile
+-rw-r--r-- 1 karchunt karchunt 3.7K Nov  1 17:37 .bashrc
+-rw-r--r-- 1 karchunt karchunt  220 Nov  1 17:37 .bash_logout
+drwx------ 2 karchunt karchunt 4.0K Nov  1 17:38 .cache
+...
+```
+
+## Creating Files and Directories
+
+### mkdir
+
+`mkdir` creates a new directory.
+
+```bash
+karchunt@kcserver:~$ mkdir folder1 folder2
+karchunt@kcserver:~$ ls
+folder1  folder2
+```
+
+If the parent directory does not exist, use the `-p` flag to create all necessary parent directories:
+
+```bash
+karchunt@kcserver:~$ mkdir folder3/innerfolder
+mkdir: cannot create directory 'folder3/innerfolder': No such file or directory
+
+karchunt@kcserver:~$ mkdir -p folder3/innerfolder
+karchunt@kcserver:~$ ls folder3
+innerfolder
+```
+
+### touch
+
+`touch` creates an empty file.
+
+```bash
+karchunt@kcserver:~$ touch newfile.txt
+karchunt@kcserver:~$ ls
+newfile.txt
+```
+
+## Moving and Copying
+
+### mv
+
+`mv` moves or renames files and directories.
+
+<Tabs>
+  <Tab title="Rename a file">
+    ```bash
+    karchunt@kcserver:~$ mv oldname.txt newname.txt
+    karchunt@kcserver:~$ ls
+    newname.txt
+    ```
+  </Tab>
+  <Tab title="Move a file">
+    ```bash
+    karchunt@kcserver:~$ mv newname.txt folder1/
+    karchunt@kcserver:~$ ls folder1
+    newname.txt
+    ```
+  </Tab>
+</Tabs>
+
+### cp
+
+`cp` copies files and directories.
+
+<Tabs>
+  <Tab title="Copy a file">
+    ```bash
+    karchunt@kcserver:~$ cp folder1/newname.txt folder2/
+    karchunt@kcserver:~$ ls folder2
+    newname.txt
+    ```
+  </Tab>
+  <Tab title="Copy a directory">
+    Use the `-r` (recursive) flag to copy a directory and all its contents:
+
+    ```bash
+    karchunt@kcserver:~$ cp -r folder1/ folder3/
+    karchunt@kcserver:~$ ls folder3
+    newname.txt
+    ```
+  </Tab>
+</Tabs>
+
+## Removing Files and Directories
+
+### rm
+
+`rm` removes files and directories.
+
+<Warning>
+  Be very careful with `sudo rm -rf`. It force-deletes folders with superuser privileges and **can permanently destroy important system files** if used incorrectly. There is no recycle bin — deletion is immediate and irreversible.
+</Warning>
+
+<Tabs>
+  <Tab title="Remove a file">
+    ```bash
+    karchunt@kcserver:~$ rm folder2/newname.txt
+    karchunt@kcserver:~$ ls folder2
+    karchunt@kcserver:~$
+    ```
+  </Tab>
+  <Tab title="Remove a directory">
+    Use the `-r` (recursive) flag to remove a directory and all its contents:
+
+    ```bash
+    karchunt@kcserver:~$ rm -r folder3/
+    karchunt@kcserver:~$ ls
+    folder1  folder2
+    ```
+  </Tab>
+</Tabs>
+
+## Viewing File Contents
+
+### cat
+
+`cat` can view file contents, create new files, or concatenate multiple files.
+
+<Tabs>
+  <Tab title="View a file">
+    ```bash
+    karchunt@kcserver:~$ cat folder1/newname.txt
+    This is a sample text file.
+    ```
+  </Tab>
+  <Tab title="Create a file">
+    ```bash
+    karchunt@DESKTOP-CCAQ09F:~$ cat > sample.txt
+    hello
+    HELLO
+    hi
+    karchunt@DESKTOP-CCAQ09F:~$ cat sample.txt
+    hello
+    HELLO
+    hi
+    ```
+    After typing your content, press `Enter` then `Ctrl+D` to save and exit.
+  </Tab>
+  <Tab title="Concatenate files">
+    ```bash
+    karchunt@kcserver:~$ cat file1.txt file2.txt
+    Content of file1
+    Content of file2
+    ```
+  </Tab>
+</Tabs>
+
+### more
+
+`more` views file contents one screen at a time.
+
+```bash
+karchunt@kcserver:~$ more largefile.txt
+This is line 1
+This is line 2
+```
+
+Key controls:
+
+| Key | Action |
+|---|---|
+| `Space` | Next page |
+| `Enter` | Next line |
+| `b` | Previous page |
+| `/` + term | Search within the file |
+| `q` | Quit |
+
+### less
+
+`less` is similar to `more` but with more advanced navigation features.
+
+```bash
+karchunt@kcserver:~$ less largefile.txt
+This is line 1
+This is line 2
+```
+
+Key controls:
+
+| Key | Action |
+|---|---|
+| `Space` | Next page |
+| `b` | Previous page |
+| `Enter` / `↓` | Next line |
+| `↑` | Previous line |
+| `/` + term | Search within the file |
+| `q` | Quit |
+
+<Tip>
+  Prefer `less` over `more` for large files — it loads faster and allows both forward and backward navigation.
+</Tip>
+
+## Other Useful Commands
+
+### echo
+
+`echo` displays a line of text or the value of a variable.
+
+```bash
+kc@kcserver:~$ echo "Hello World"
+Hello World
+
+kc@kcserver:~$ echo -n "Hello World" # without trailing newline
+Hello Worldkc@kcserver:~$
+```
+
+### uptime
+
+`uptime` shows how long the system has been running, along with the current time, number of logged-in users, and system load averages.
+
+```bash
+kc@kcserver:~$ uptime
+ 14:23:58 up 7 min,  2 users,  load average: 0.04, 0.03, 0.00
+```

@@ -1,0 +1,31 @@
+---
+title: Ignore Errors
+description: Allow subsequent commands and tasks to continue running even when a task fails using ignore_error.
+---
+
+Use the `ignore_error: true` attribute to **ignore errors** during task execution. This allows subsequent tasks and commands to **continue running even if the task fails**.
+
+```yaml title="Taskfile.yaml"
+version: '3'
+tasks:
+  lint:
+    internal: true
+    ignore_error: true
+    cmds:
+      - exit 1
+  deploy:
+    cmds:
+      - task: lint
+      - echo "This will run even if lint fails"
+```
+
+```bash title="Demo and Output"
+ubuntu@touted-mite:~$ task deploy
+task: [lint] exit 1
+task: [deploy] echo "This will run even if lint fails"
+This will run even if lint fails
+```
+
+<Warning>
+  Use `ignore_error` carefully. Silently ignoring errors can make failures harder to detect. It is best used for non-critical tasks like linters where you want the pipeline to continue regardless.
+</Warning>

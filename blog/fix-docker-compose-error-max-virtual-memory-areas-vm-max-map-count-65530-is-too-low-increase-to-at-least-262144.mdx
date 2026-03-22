@@ -1,0 +1,24 @@
+---
+title: Fix Docker Compose error - vm.max_map_count too low
+description: Learn how to fix the Docker Compose error where max virtual memory areas vm.max_map_count 65530 is too low and needs to be increased to at least 262144.
+---
+
+When using Docker Compose, you might encounter the following error:
+
+```text
+max virtual memory areas vm.max_map_count 65530 is too low, increase to at least 262144
+```
+
+This error indicates that the current setting for `vm.max_map_count` is **too low** for the application you are trying to run inside a Docker container. This setting **controls the maximum number of memory map areas** a process may have.
+
+## Fix
+
+**Increase the VM max map count** to the required value:
+
+```bash
+sudo sysctl -w vm.max_map_count=262144
+```
+
+<Note>
+  This change is applied immediately but is **not persistent** across reboots. To make it permanent, add `vm.max_map_count=262144` to `/etc/sysctl.conf` and run `sudo sysctl -p` to reload.
+</Note>

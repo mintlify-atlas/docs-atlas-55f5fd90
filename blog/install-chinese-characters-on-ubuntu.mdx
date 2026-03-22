@@ -1,0 +1,41 @@
+---
+title: Install Chinese Characters on Ubuntu
+description: Learn how to install Chinese language support and input methods on Ubuntu using IBus Pinyin.
+---
+
+Ubuntu does not come with Chinese language support pre-installed. Follow these steps to add it:
+
+## Install IBus Pinyin
+
+```bash
+sudo apt update
+sudo apt install ibus-pinyin ibus-sunpinyin
+```
+
+## Configure the input method
+
+<Steps>
+  ### Open Language settings
+
+  Go to **Settings > Region & Language** and click **Manage Installed Languages**.
+
+  ### Ensure IBus is set as the input method system
+
+  Under the **"Input Method"** tab, verify that **"Keyboard input method system"** is set to `ibus`.
+
+  ### Install the Chinese language pack
+
+  Click **"Install/Remove Languages"** and check the box next to **"Chinese (Simplified)"** or **"Chinese (Traditional)"** as needed. Click **Apply**.
+
+  ### Add Chinese as an input source
+
+  Under **"Input Sources"**, click the **+** button. Select **"Chinese (China)"** and choose your desired input method (e.g., **"Chinese (Intelligent Pinyin)"**). Click **Add**.
+
+  <Note>
+    You can also navigate to the **"Input Method"** tab, click **"Add"**, select **"Chinese"**, and then choose your desired input method (e.g., "Chinese - Pinyin").
+  </Note>
+
+  ### Apply the changes
+
+  **Log out** and log back in for the changes to take effect.
+</Steps>

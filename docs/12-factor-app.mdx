@@ -1,0 +1,307 @@
+---
+title: 12-Factor App
+description: A methodology for building scalable, maintainable, and portable cloud-native SaaS applications using twelve proven best practices.
+---
+
+The 12-Factor App is a **methodology** for building software-as-a-service (SaaS) and cloud-native applications. It provides a set of best practices that make web apps easy to deploy, scalable, maintainable, portable, and resilient.
+
+<Note>
+  The full methodology is documented at [12factor.net](https://12factor.net/).
+</Note>
+
+Applications that follow the methodology are:
+
+- Portable across execution environments without source code changes
+- Suitable for deployment on modern cloud platforms
+- Consistent between development and production
+- Designed for continuous deployment
+- Easy to scale horizontally
+
+## The twelve factors
+
+<AccordionGroup>
+  <Accordion title="I. Codebase">
+    A codebase is always tracked in a version control system such as Git. Every app has **one codebase**, but it can be **deployed many times** (staging, production, etc.).
+
+    - Codebase = repository
+    - One-to-one relationship between codebase and app (app = service)
+
+    Imagine a food web application with multiple developers. Git allows everyone to push and pull changes from a central location (GitHub, GitLab, etc.) so all deployments stay consistent.
+
+    When you have multiple application services sharing one repository, it is a **distributed system** and violates the 12-factor rule. Each service must have its **own codebase**, and within that codebase you can have multiple deploys.
+
+    <Warning>
+      Multiple application services sharing a single codebase violates the 12-Factor methodology. Split each service into its own repository.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="II. Dependencies">
+    All dependencies must be **explicitly declared** and **isolated**. The app must not rely on the implicit existence of system tools, libraries, or packages.
+
+    Consider a FastAPI backend service:
+
+    ```python title="api.py"
+    from fastapi import FastAPI
+
+    app = FastAPI(
+      title='Notifications',
+      description='This is notification API',
+      version='0.1.0'
+    )
+
+    notifications = [
+      {'name': 'Raymond Melton', 'message': 'Fight and road more hard whose.'},
+      {'name': 'Kevin Dunn', 'message': 'Ten environmental soldier often.'},
+    ]
+
+    @app.get("/notifications")
+    def get_all_notifications():
+      return notifications
+    ```
+
+    There is no guarantee that FastAPI exists on the system where your app will run. In Python:
+
+    - **Declaration** — list dependencies in `requirements.txt` and install with `pip install -r requirements.txt`:
+      ```txt title="requirements.txt"
+      fastapi==0.45.0
+      ```
+    - **Isolation** — use `virtualenv` (`python -m venv venv`) to create an isolated environment with its own dependency versions.
+
+    <Tip>
+      For system-level tools such as `curl` or `wget`, use Docker. A Docker container is a self-contained, executable package that includes the application source code, tools, libraries, and all dependencies needed to run the app.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="III. Config">
+    Store configuration in **environment variables**. Configuration differs between deployments (staging vs. production), so it must not be hard-coded.
+
+    The following example violates this factor by hard-coding database credentials:
+
+    ```python title="api.py"
+    from fastapi import FastAPI
+    import mysql.connector
+
+    app = FastAPI(
+      title='Notifications',
+      description='This is notification API',
+      version='0.1.0'
+    )
+
+    # Hard-coded credentials — violates 12-factor
+    mydb = mysql.connector.connect(
+      host = "localhost",
+      user = "username",
+      password = "password",
+      database = "test"
+    )
+    ```
+
+    Instead, store configuration in a `.env` file:
+
+    ```txt title=".env"
+    HOST=localhost
+    USER=username
+    PASSWORD=password
+    DATABASE=test
+    ```
+
+    Then read the values from environment variables at runtime:
+
+    ```python title="api.py"
+    import os
+    import mysql.connector
+
+    from fastapi import FastAPI
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
+    app = FastAPI(
+      title='Notifications',
+      description='This is notification API',
+      version='0.1.0'
+    )
+
+    mydb = mysql.connector.connect(
+      host = os.getenv('HOST'),
+      user = os.getenv('USER'),
+      password = os.getenv('PASSWORD'),
+      database = os.getenv('DATABASE')
+    )
+    ```
+
+    This allows different configurations per deployment without exposing credentials in source control.
+  </Accordion>
+
+  <Accordion title="IV. Backing services">
+    Treat all backing services as **attached resources**. The app makes no distinction between local and third-party services.
+
+    Examples of backing services:
+
+    - Databases (MySQL, PostgreSQL)
+    - Caching systems (Redis)
+    - Messaging/queueing systems (Kafka, RabbitMQ)
+    - SMTP mail servers
+
+    > It makes no distinction between local and third party services.
+    >
+    > — 12factor.net
+
+    If your PostgreSQL database is an attached resource, you can swap between a local instance and a cloud-hosted one simply by changing the connection URL in your config — no code changes required.
+  </Accordion>
+
+  <Accordion title="V. Build, release, run">
+    Strictly separate the **build**, **release**, and **run** stages.
+
+    <Steps>
+      <Step title="Build stage">
+        Transform source code into an executable or binary. The build stage compiles assets and binaries based on vendor dependencies and code. (Examples: Docker image build, Maven, setuptools.)
+      </Step>
+      <Step title="Release stage">
+        Combine the build artifact with the deployment config to produce a release object.
+
+        `executable + config = release object`
+
+        Every release must have a **unique release ID** (e.g. a timestamp `2024-05-11-13-30-10` or an incrementing version `v1`, `v2`, `v3`). A release cannot be modified once created — any change must produce a new release.
+      </Step>
+      <Step title="Run stage">
+        Run the release object in the target environment. The same release object can be deployed to development, staging, and production, ensuring environment consistency.
+      </Step>
+    </Steps>
+
+    <Tip>
+      Because releases are immutable and versioned, you can roll back to any previous release using the build artifacts from the build stage.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="VI. Processes">
+    Execute the app as **one or more stateless, share-nothing processes**. Any data that needs to persist must be stored in a backing service.
+
+    The following example violates this factor by storing state in process memory:
+
+    ```python title="api.py"
+    from flask import Flask
+
+    app = Flask(__name__)
+    total_visit = 0  # State stored in process memory — violates 12-factor
+
+    @app.route("/")
+    def homepage():
+      global total_visit
+      total_visit += 1
+      return "Welcome to my homepage"
+
+    if __name__ == "__main__":
+      app.run(host="0.0.0.0")
+    ```
+
+    With multiple instances, each process maintains its own `total_visit` counter and they go out of sync.
+
+    Similarly, storing user session data in process memory or the filesystem means a user redirected to a different instance loses their session.
+
+    <Warning>
+      Sticky sessions are a violation of the 12-Factor methodology and should never be used. Store session data in a backing service such as Redis, which also supports time-based expiration.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="VII. Port binding">
+    Export services via **port binding**. A 12-factor app is completely self-contained and does not rely on a specific web server injected at runtime.
+
+    ```python title="api.py"
+    import os
+    from flask import Flask
+
+    app = Flask(__name__)
+
+    @app.route("/")
+    def hello_world():
+      return "<p>Hello, World!</p>"
+
+    if __name__ == '__main__':
+      app.run(debug=True, port=os.environ.get("PORT", 5000))
+    ```
+
+    Flask binds to port `5000` by default. During local development you access the service at `http://localhost:5000`. The port is read from the `PORT` environment variable, making it configurable per deployment.
+  </Accordion>
+
+  <Accordion title="VIII. Concurrency">
+    Scale out via the **process model**. Applications should scale horizontally by running multiple instances, not vertically by adding resources to a single server.
+
+    Scaling vertically (adding RAM or CPU to one server) requires downtime. Instead, add more servers and spin up more application instances. Use a **load balancer** to distribute traffic across instances.
+
+    <Tip>
+      Processes are first-class citizens in the 12-factor app. Design your app to support multiple concurrent instances from day one.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="IX. Disposability">
+    Maximize robustness with **fast startup** and **graceful shutdown**. Processes are disposable — they can be started or stopped at any moment.
+
+    - **Fast startup**: Avoid complex provisioning scripts. Processes should be ready to serve requests as quickly as possible.
+    - **Graceful shutdown**: When the process manager sends a `SIGTERM` signal, stop accepting new requests and complete all in-flight requests before exiting.
+
+    > Processes shut down gracefully when they receive a SIGTERM signal from the process manager.
+    >
+    > — 12factor.net
+
+    For example, when you run `docker stop`, Docker sends `SIGTERM` to the container. If the container does not stop within the grace period, Docker sends `SIGKILL` to force termination.
+
+    <Note>
+      Signal sequence: `SIGTERM` → grace period → `SIGKILL` → container process terminated.
+    </Note>
+
+    Handling `SIGTERM` correctly prevents impact on users who are waiting for a response.
+  </Accordion>
+
+  <Accordion title="X. Dev/prod parity">
+    Keep development, staging, and production environments **as similar as possible** by applying CI/CD principles.
+
+    Gaps between environments typically fall into three categories:
+
+    | Area      | Traditional app                                        | 12-factor app          |
+    | --------- | ------------------------------------------------------ | ---------------------- |
+    | Time      | Weeks or months between code and deploy                | Hours or minutes       |
+    | Personnel | Developers write code; ops engineers deploy it         | Same person does both  |
+    | Tools     | Different tools in dev vs. production (SQLite vs. MySQL) | As similar as possible |
+
+    > The twelve-factor developer resists the urge to use different backing services between development and production.
+    >
+    > — 12factor.net
+
+    By adopting Continuous Integration, Continuous Delivery, and Continuous Deployment (CI/CD), you minimise all three gaps and catch environment-specific issues early.
+  </Accordion>
+
+  <Accordion title="XI. Logs">
+    Treat logs as **event streams**. The app itself should not concern itself with routing or storing logs.
+
+    - Do not write logs to a local file. In containerised environments, a container can be terminated at any moment and its local logs will be lost.
+    - Do not tightly couple the app to a specific logging solution.
+
+    > A twelve-factor app never concerns itself with routing or storage of its output stream.
+    >
+    > — 12factor.net
+
+    Instead:
+
+    - Write logs to `stdout` in a **structured format (JSON)**.
+    - Let the execution environment (container orchestrator, log agent) capture and forward the stream to a centralised logging system (e.g. Fluentd, Datadog, CloudWatch) for querying and analysis.
+  </Accordion>
+
+  <Accordion title="XII. Admin processes">
+    Run admin and management tasks as **one-time processes**. These tasks should be:
+
+    - Stored in source control alongside application code
+    - Run in the same environment as the production application
+    - Executed as a separate process, not mixed into the long-running app process
+
+    Examples of admin tasks:
+
+    - Database migrations
+    - One-time data fixes (e.g. resetting an inaccurate visit counter in PostgreSQL)
+    - Script-based data imports or exports
+
+    <Note>
+      Run admin tasks on the same systems as the production application to ensure they use the same environment, config, and dependency versions.
+    </Note>
+  </Accordion>
+</AccordionGroup>

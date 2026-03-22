@@ -1,0 +1,56 @@
+---
+title: Labels, Selectors, and Annotations
+description: Learn how to use Kubernetes labels, selectors, and annotations to group, filter, and record metadata on objects.
+---
+
+## Concept and Usage
+
+<CardGroup cols={3}>
+  <Card title="Labels" icon="tag">
+    **Properties attached** to each item (pod, deployment, etc.). Used to identify and group objects.
+  </Card>
+  <Card title="Selectors" icon="filter">
+    Used to **filter items** based on their labels.
+  </Card>
+  <Card title="Annotations" icon="note-sticky">
+    Used to **record additional information** for your records, like `buildVersion`, `author`, etc. Not used for selection.
+  </Card>
+</CardGroup>
+
+Normally, **labels** and **selectors** are used together to **group and select objects**.
+
+## Filtering with Selectors
+
+```bash
+kubectl get deployments --selector env=prod
+kubectl get deployments --selector env=prod,tier=backend
+```
+
+## Example Deployment
+
+The `metadata.labels` field on the Deployment itself labels the Deployment object. The `spec.selector.matchLabels` and `spec.template.metadata.labels` are used to link the ReplicaSet to its Pods.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-sample-deployment
+  labels:
+    env: prod
+    tier: backend
+  annotations:     # Additional information (not used for selection)
+    buildVersion: 1.0.0
+    author: KarChun
+spec:
+  selector:
+    matchLabels:
+      app: sample-app
+  template:
+    metadata:
+      labels:
+        app: sample-app
+    spec:
+      containers:
+        - name: my-ubuntu-app
+          image: ubuntu
+```

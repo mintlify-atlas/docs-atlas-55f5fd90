@@ -1,0 +1,48 @@
+---
+title: Stashing
+description: Learn how to use git stash to temporarily shelve uncommitted changes and restore them later.
+---
+
+## Git stash
+
+Imagine Developer A is working on a new feature on the `develop` branch. Developer B suddenly reports a critical bug that must be fixed immediately on `main`. Developer A's feature isn't finished yet, so they don't want to commit it — but they need a clean working area to switch branches.
+
+This is exactly what `git stash` is for. It temporarily shelves (stashes) changes so you can switch context and come back to your work later.
+
+<Info>
+  Stashes pile up like a queue (FIFO). You can keep pushing changes onto the stash and apply or pop them when you're ready.
+</Info>
+
+## Stash commands
+
+```bash
+# Stash changes
+git stash
+git stash push
+git stash save "message"
+
+# Apply stashed changes
+git stash apply                              # re-apply without removing from stash
+git stash pop                                # apply and remove the latest stash
+git stash pop stash@{1}                      # apply a specific stash
+git stash branch <branch-name> stash@{1}    # create a branch from a stash entry
+
+# List all stashes
+git stash list
+
+# Inspect a stash
+git stash show                               # summary of changes
+git stash show -p                            # full diff of the stash
+
+# Remove stashes
+git stash clear                              # remove all stashes
+git stash drop stash@{1}                     # remove a specific stash
+```
+
+<Tip>
+  Use `git stash branch <branch-name> stash@{1}` if you expect conflicts when popping your stash. It creates a new branch from the stash, avoiding conflicts with your current working tree.
+</Tip>
+
+## stash push
+
+When you run `git stash` (or `git stash push`), Git saves your current working directory and staged changes to the stash stack, leaving you with a clean working area.

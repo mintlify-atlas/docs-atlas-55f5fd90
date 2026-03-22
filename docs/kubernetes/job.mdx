@@ -1,0 +1,46 @@
+---
+title: Job
+description: Learn about Kubernetes Jobs for running batch workloads that need to run to completion.
+---
+
+## Concept and Usage
+
+A Job **creates one or more pods** and is **considered complete** when all the pods inside it complete successfully. When you delete a job, the pods created by the job are deleted too.
+
+**Use cases:**
+- Running a batch job
+- Backup operations
+
+## Job YAML
+
+```yaml title="job.yaml"
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backup-job
+spec:
+  completions: 3    # Run until 3 successful pod completions
+  parallelism: 2    # Run 2 pods in parallel at a time
+  template:         # Pod template
+    spec:
+      containers:
+        - name: backup
+          image: busybox
+          command: ["echo", "Backup operation"]
+      restartPolicy: Never
+```
+
+- **`completions`** — The job runs until this many pods complete successfully.
+- **`parallelism`** — How many pods to run in parallel at a time.
+- **`restartPolicy: Never`** — If a pod fails, it will **not be restarted**. Instead, a **new pod** is created to replace it.
+
+<Note>
+  If some pods fail, the job will **create new pods** to replace the failed ones until the specified number of `completions` is achieved. The job keeps retrying until all pods have successfully completed or the job is deleted.
+</Note>
+
+## Commands
+
+```bash
+kubectl get jobs
+kubectl delete job <job-name>
+```

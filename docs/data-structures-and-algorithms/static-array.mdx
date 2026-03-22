@@ -1,0 +1,194 @@
+---
+title: Static Array
+description: Learn about static arrays — fixed-size arrays with O(1) access, their time complexities, and how to implement read, traverse, insert, and delete operations in Python.
+---
+
+## What is a Static Array?
+
+A **static array** is an array with a **fixed size** that must be **declared at the time of creation**. The size **cannot be changed** after the array is created.
+
+<Warning>
+  If the array is full, you cannot add additional elements into it.
+</Warning>
+
+Memory is **allocated at compile time**, which means the size must be known upfront and **cannot change at runtime**. Elements are stored in a **contiguous block of memory**, enabling **efficient index-based access**.
+
+## Time Complexity
+
+| Operation | Big-O | Notes |
+| --------- | ----- | ----- |
+| Access | O(1) | Direct index-to-address mapping |
+| Insert / Remove End | O(1) | No shifting required |
+| Insert / Remove Middle | O(n) | Subsequent elements must be shifted |
+
+<Note>
+  **O(1) — Constant Time:** The operation takes the same amount of time regardless of the size of the array, because each index maps directly to a specific memory address.
+</Note>
+
+<CardGroup cols={2}>
+  <Card title="Advantages">
+    - Simple to implement
+    - Efficient for accessing elements by index
+  </Card>
+  <Card title="Disadvantages">
+    - **Fixed size** — can waste memory if under-utilized, or fail if too small
+    - Insertion and deletion can be **costly** due to element shifting
+  </Card>
+</CardGroup>
+
+## Operations
+
+<Steps>
+
+### Reading from a Static Array
+
+Access any element in **O(1)** time using its index (starting from `0`).
+
+```python
+static_array = [1, 2, 3, 4, 5]
+
+print(static_array[0])  # Output: 1
+print(static_array[2])  # Output: 3
+```
+
+### Traversing a Static Array
+
+Traversing visits every element, taking **O(n)** time where `n` is the number of elements.
+
+```python
+# Using index-based loop
+for i in range(len(static_array)):
+    print(static_array[i])
+
+# Using for-each loop
+for value in static_array:
+    print(value)
+
+# Using while loop
+i = 0
+while i < len(static_array):
+    print(static_array[i])
+    i += 1
+```
+
+### Deleting from a Static Array
+
+Two cases:
+- **Delete the last element** — **O(1)**: simply reduce the element count.
+- **Delete at a specific index** — **O(n)**: shift all subsequent elements left.
+
+```python
+# count = current number of elements
+def remove(index: int) -> None:
+    if not 0 <= index < count:
+        raise IndexError("Index out of bounds.")
+
+    # Shift all elements from next index to the left
+    for i in range(index, count - 1):
+        static_array[i] = static_array[i + 1]
+
+    # Clear the last element and decrement count
+    static_array[count - 1] = 0
+    count -= 1
+```
+
+### Inserting into a Static Array
+
+Two cases:
+- **Insert at the end** — **O(1)**: place the value at `count`, then increment.
+- **Insert at a specific index** — **O(n)**: shift all subsequent elements right first.
+
+```python
+# count = current number of elements
+# capacity = total allocated size
+def insert(index: int, value: int) -> None:
+    if count == capacity:
+        raise OverflowError("Array is at full capacity.")
+    if not 0 <= index <= count:
+        raise IndexError("Index out of bounds.")
+
+    # Shift elements to the right to make space
+    # Example: insert 4 at index 1 in [1, 2, 3] -> [1, 4, 2, 3]
+    # i=3: array[3] = array[2]  -> [1, 2, 3, 3]
+    # i=2: array[2] = array[1]  -> [1, 2, 2, 3]
+    for i in range(count, index, -1):
+        static_array[i] = static_array[i - 1]
+
+    static_array[index] = value
+    count += 1
+```
+
+</Steps>
+
+## Static Array Class Implementation
+
+```python title="static_array.py"
+class StaticArray:
+    def __init__(self, capacity: int) -> None:
+        if not isinstance(capacity, int) or capacity <= 0:
+            raise ValueError("Capacity must be a positive integer.")
+        self._items = [None] * capacity
+        self._capacity = capacity
+        self._count = 0  # Track the current number of elements
+
+    def __len__(self) -> int:
+        return self._count
+
+    def __getitem__(self, index: int) -> int:
+        if not 0 <= index < self._count:
+            raise IndexError("Index out of bounds.")
+        return self._items[index]
+
+    def __setitem__(self, index: int, value: int) -> None:
+        if not 0 <= index < self._count:
+            raise IndexError("Index out of bounds.")
+        self._items[index] = value
+
+    def append(self, value: int) -> None:
+        if self._count == self._capacity:
+            raise OverflowError("Array is at full capacity.")
+        self._items[self._count] = value
+        self._count += 1
+
+    def insert(self, index: int, value: int) -> None:
+        if self._count == self._capacity:
+            raise OverflowError("Array is at full capacity.")
+        if not 0 <= index <= self._count:
+            raise IndexError("Index out of bounds.")
+        for i in range(self._count, index, -1):
+            self._items[i] = self._items[i - 1]
+        self._items[index] = value
+        self._count += 1
+
+    def remove(self, index: int) -> int:
+        if not 0 <= index < self._count:
+            raise IndexError("Index out of bounds.")
+        value = self._items[index]
+        for i in range(index, self._count - 1):
+            self._items[i] = self._items[i + 1]
+        self._items[self._count - 1] = None
+        self._count -= 1
+        return value
+
+    def traverse(self) -> None:
+        for i in range(self._count):
+            print(self._items[i])
+
+# Example usage
+my_array = StaticArray(5)
+my_array.append(1)
+my_array.append(2)
+my_array.append(3)
+my_array.traverse()  # Output: 1 2 3
+
+my_array.insert(1, 4)
+my_array.traverse()  # Output: 1 4 2 3
+
+removed_item = my_array.remove(2)
+print(f"Removed item: {removed_item}")  # Output: Removed item: 2
+my_array.traverse()  # Output: 1 4 3
+
+print(my_array[0])   # Output: 1
+my_array[0] = 10
+print(my_array[0])   # Output: 10
+```

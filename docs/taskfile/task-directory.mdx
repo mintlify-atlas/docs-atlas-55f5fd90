@@ -1,0 +1,29 @@
+---
+title: Task Directory
+description: Run tasks in a different directory from the Taskfile location using the dir keyword.
+---
+
+<Note>
+  For running included Taskfiles in a different directory, see [Include Other Taskfile to Run on Different Directory](/docs/taskfile/include-other-taskfile#run-included-taskfile-in-a-different-directory).
+</Note>
+
+By default, tasks run in the directory where the Taskfile is located. Use the `dir` keyword to **run a task's commands in a different directory**.
+
+```yaml title="Taskfile.yml"
+version: '3'
+tasks:
+  get-working-directory:
+    dir: ./app1
+    cmds:
+      - pwd
+```
+
+<Note>
+  If the specified directory does not exist, Task will create it automatically.
+</Note>
+
+```bash title="Demo and output"
+ubuntu@touted-mite:~$ task get-working-directory
+task: [get-working-directory] pwd
+/home/ubuntu/app1
+```

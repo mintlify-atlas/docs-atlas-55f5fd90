@@ -1,0 +1,134 @@
+---
+title: Bash Shell
+description: Explore the Bash shell — how to identify it, change your default shell, and use its powerful built-in features like auto-completion, history, aliases, and prompt customization.
+---
+
+The **Bash shell (Bourne Again SHell)** is a widely used command-line interpreter for Unix-like operating systems. It provides a powerful interface for users to interact with the system, execute commands, and run scripts.
+
+## Identifying the Bash Shell
+
+<Note>
+  `/bin/bash` is very popular because it **offers a rich set of features**, including command history, tab completion, and scripting capabilities.
+</Note>
+
+To check which shell you're currently using, run the following command:
+
+```bash
+karchunt@kcserver:~$ echo $SHELL
+/bin/bash
+```
+
+You can also use the `env` command to confirm the current shell:
+
+```bash
+karchunt@kcserver:~$ env | grep SHELL
+SHELL=/bin/bash
+```
+
+## Changing the Default Shell
+
+If you want to change your default shell to Bash, use the `chsh` (change shell) command.
+
+<Tabs>
+  <Tab title="Interactive">
+    ```bash
+    karchunt@kcserver:~$ chsh
+    Password:
+    Changing the login shell for karchunt
+    Enter the new value, or press ENTER for the default
+            Login Shell [/bin/bash]: /bin/sh
+    ```
+  </Tab>
+  <Tab title="Non-interactive">
+    ```bash
+    karchunt@kcserver:~$ chsh -s /bin/bash
+    Password:
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  After running `chsh`, you need to **log out and log back in** for the shell change to take effect.
+</Tip>
+
+## Bash Features
+
+<Accordion title="Command Auto-completion">
+  Bash supports command auto-completion, which lets you quickly complete commands and file names by pressing the `Tab` key.
+
+  ```bash
+  karchunt@kcserver:~$ ls folder
+  folder1/ folder3/
+  ```
+
+  Pressing `Tab` after typing `folder` will auto-complete to the available matching directory names. If there is no ambiguity, it completes automatically.
+</Accordion>
+
+<Accordion title="Command History">
+  Bash maintains a history of commands you've executed. Access it with the `history` command or by pressing the `Up` and `Down` arrow keys to cycle through previous commands.
+
+  ```bash
+  karchunt@kcserver:~$ history
+    1  ls
+    2  cd folder1
+    3  nano file.txt
+    4  history
+  ```
+</Accordion>
+
+<Accordion title="Aliases">
+  Bash allows you to create shortcuts for frequently used commands using the `alias` command.
+
+  ```bash
+  karchunt@kcserver:~$ alias ll='ls -la'
+  karchunt@kcserver:~$ ll
+  ```
+
+  To see all currently defined aliases, run `alias` with no arguments:
+
+  ```bash
+  karchunt@DESKTOP-CCAQ09F:~$ alias
+  alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"\''
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias grep='grep --color=auto'
+alias l='ls -CF'
+alias la='ls -A'
+alias ll='ls -la'
+alias ls='ls --color=auto'
+  ```
+
+  To make an alias **permanent**, add its definition to your `~/.bashrc` file.
+</Accordion>
+
+## Customizing the Bash Prompt
+
+When you log in to a Bash shell, you typically see `~$` as your prompt. You can customize this by modifying the `PS1` variable in your `~/.bashrc` file.
+
+Check the current value of `PS1`:
+
+```bash
+karchunt@kcserver:~$ echo $PS1
+\[\e]0;\u@\h: \w\a\]${debian_chroot:+(${debian_chroot})}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$
+```
+
+Common escape sequences for prompt customization:
+
+| Sequence | Description |
+|---|---|
+| `\u` | Username |
+| `\h` | Hostname |
+| `\w` | Current working directory |
+| `\d` | Date |
+| `\t` | Current time |
+
+Example — set a custom prompt directly in the terminal:
+
+```bash
+karchunt@kcserver:~$ PS1="\d \u@\h:\w\$"
+Thu Jan 29 karchunt@kcserver:~$
+```
+
+<Tip>
+  To make prompt changes permanent, add the `PS1` assignment to your `~/.bashrc` file so it applies on every new shell session.
+</Tip>

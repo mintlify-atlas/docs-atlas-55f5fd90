@@ -1,0 +1,32 @@
+---
+title: Linux Shell
+description: Learn what the Linux shell is, how to log in to it, and how to navigate your home directory using the terminal.
+---
+
+## What is the Linux Shell?
+
+The Linux shell is a **command-line interface** used to **interact with the operating system**. It allows users to execute commands and scripts to perform various tasks. When commands are entered in the shell, they are executed immediately and the output is displayed on the terminal.
+
+When a user logs in to a Linux system, the shell starts automatically. The default shell for most Linux distributions is **Bash (Bourne Again Shell)**, but other shells like Zsh and Fish are also available.
+
+## Logging In to the Linux Shell
+
+To log in to a Linux shell, you can use a **terminal emulator** or **SSH** (Secure Shell) to connect to a remote Linux system.
+
+```bash
+ssh username@hostname
+```
+
+After entering your password and successfully authenticating, you'll be placed in the **home directory** of your user — typically located at `/home/username`. For example, if your username is `john`, your home directory will be `/home/john`.
+
+This home directory is your **own personal workspace**, used to store files, configurations, and settings specific to your user account.
+
+## What is `~`?
+
+<Note>
+  You can use the `pwd` command to **print the current working directory** and confirm where you are in the filesystem.
+</Note>
+
+In the Linux shell, the tilde symbol `~` represents the **home directory** of the currently logged-in user. For example, if your username is `john`, then `~` refers to `/home/john`.
+
+This shorthand is supported across most Linux commands and makes navigating back to your home directory quick and easy.

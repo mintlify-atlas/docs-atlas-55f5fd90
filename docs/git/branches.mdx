@@ -1,0 +1,135 @@
+---
+title: Branches
+description: Understand Git branches and learn how to create, switch, merge, delete, rename, and push branches.
+---
+
+## What is a Git branch?
+
+A branch is an **independent line of development work**. When you're adding a new feature or fixing a bug, you create a branch so your changes are isolated from the main codebase until they are ready.
+
+<Info>
+  The default branch is created as either **master** or **main** depending on your Git settings.
+</Info>
+
+**Regardless of how big or small your changes are, always create a branch and work on it to encapsulate your changes.**
+
+All commits you make on a branch are recorded in that branch's history.
+
+## Branch commands
+
+### Create a branch
+
+```bash
+git branch <branch-name>
+```
+
+### Checkout / switch branch
+
+After creating a branch, switch to it:
+
+```bash
+git checkout <branch-name>
+
+# Create and switch in one command
+git checkout -b <branch-name>
+```
+
+<Info>
+  **HEAD** is Git's way of referring to the current snapshot (the commit you are currently working on).
+</Info>
+
+The default branch can still receive commits while you are checked out on another branch.
+
+### Merge branch (fast-forward)
+
+The `git merge` command combines two branches, consolidating multiple commit sequences into a single history.
+
+In a fast-forward merge, the feature branch diverged directly from main and no other changes have been made to main — so Git simply moves the pointer forward.
+
+```bash
+# Merge develop into main
+git checkout main
+git merge develop
+```
+
+#### Merge conflicts
+
+A merge conflict occurs when two developers change the same lines in a file and Git cannot determine which version is correct.
+
+<Steps>
+  <Step title="Open the conflicting file">
+    Manually review and resolve the conflicting sections in the file.
+  </Step>
+  <Step title="Stage the resolved file">
+    ```bash
+    git add <file-that-has-conflicts>
+    ```
+  </Step>
+  <Step title="Commit the merge">
+    ```bash
+    git commit -m "merged with <branch> after fixing conflicts"
+    ```
+  </Step>
+</Steps>
+
+### List branches
+
+```bash
+git branch                # list local branches
+git branch -a             # list all local and remote branches
+```
+
+### Delete a branch
+
+```bash
+git branch -d <branch-name>   # safe delete
+git branch -D <branch-name>   # force delete
+```
+
+### Rename a branch
+
+```bash
+git branch -m <branch-name> <new-branch-name>   # rename
+git branch -M <branch-name> <new-branch-name>   # force rename
+```
+
+### Create remote branches and push
+
+Before pushing a local branch to a remote repository, add the remote if you haven't already:
+
+```bash
+git remote add <remote-name> <remote-repo-url>
+
+# Example
+git remote add origin https://github.com/KarChunT/git-training
+```
+
+Then push the local branch and set the upstream:
+
+```bash
+# Set upstream and push
+git push -u <remote-name> <local-branch-name>
+
+# After upstream is set, you can simply run:
+git push
+
+# Force push (overwrites remote)
+git push --force
+
+# Example
+git push -u origin develop
+```
+
+<Info>
+  An **upstream** is a remote tracking branch associated with your local branch. Each local branch can have only one upstream. Setting it once lets you run `git pull` and `git push` without specifying the remote and branch every time.
+</Info>
+
+To change an existing upstream branch:
+
+```bash
+git branch -u origin/<branch-name>
+```
+
+<Warning>
+  Use `git push --force` with caution. It overwrites the remote branch history and can cause other contributors to lose work.
+</Warning>

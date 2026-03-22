@@ -1,0 +1,26 @@
+---
+title: Setup Node.js
+description: Learn how to set up Node.js on an Ubuntu machine using the NodeSource PPA.
+---
+
+There are multiple ways to install Node.js on an Ubuntu machine. The recommended approach is to use the NodeSource PPA, which provides up-to-date LTS releases.
+
+## Install Node.js using the NodeSource PPA
+
+<Info>
+  **Reference:** [NodeSource distributions on GitHub](https://github.com/nodesource/distributions/blob/master/README.md)
+</Info>
+
+```bash
+# Download the latest NodeSource setup script
+curl -fsSL https://deb.nodesource.com/setup_lts.x -o nodesource_setup.sh
+sudo -E bash nodesource_setup.sh
+
+# Install Node.js (use either one)
+sudo apt-get install -y nodejs
+# or
+sudo apt-get install -y nsolid
+
+# Verify installation
+node -v
+```

@@ -1,0 +1,50 @@
+---
+title: Remote repositories
+description: Learn how to configure a remote, fetch and pull changes, and list remote repositories.
+---
+
+## Configuration and setup
+
+To connect your local repository to a remote, add the remote and push your branch. For a full walkthrough, see the [Create remote branches and push](/docs/git/branches#create-remote-branches-and-push) section.
+
+```bash
+git remote add <remote-name> <remote-repo-url>
+git push -u <remote-name> <local-branch-name>
+```
+
+## Fetching and pulling
+
+Both `git fetch` and `git pull` download changes from the remote, but they behave differently:
+
+| | Fetch | Pull |
+|---|---|---|
+| **What it does** | Copies changes into your local Git repository but does not update your working directory | Copies changes and immediately updates your working directory |
+| **Formula** | `fetch` only | `pull` = `fetch` + `merge` |
+
+### Using fetch + merge
+
+```bash
+git fetch origin <branch-name>
+git merge origin/<branch-name>
+```
+
+### Using pull directly
+
+```bash
+git pull origin <branch-name>
+
+# Or simply, if upstream is set:
+git pull
+```
+
+<Tip>
+  Prefer `git fetch` followed by `git merge` when you want to inspect remote changes before integrating them into your branch.
+</Tip>
+
+## List all remote repositories
+
+```bash
+git remote -v
+```
+
+This shows all configured remotes and their fetch/push URLs.

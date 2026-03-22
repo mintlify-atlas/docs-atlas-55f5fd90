@@ -1,0 +1,33 @@
+---
+title: Install Google Chrome Using a .deb File
+description: A step-by-step guide to installing Google Chrome on a Debian-based system such as Ubuntu using a .deb file.
+---
+
+One of the most straightforward ways to install Google Chrome on a Debian-based system (such as Ubuntu) is to download the `.deb` file directly from Google's official website and install it via the terminal.
+
+## Installation
+
+```bash
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo dpkg -i google-chrome-stable_current_amd64.deb
+```
+
+<Note>
+  If you encounter dependency errors during installation, run the following command to fix them:
+
+  ```bash
+  sudo apt --fix-broken install
+  # or
+  sudo apt-get install -f
+  ```
+</Note>
+
+## Launch Chrome
+
+After the installation is complete, launch Google Chrome from your applications menu or from the terminal:
+
+```bash
+google-chrome
+# or
+google-chrome-stable
+```

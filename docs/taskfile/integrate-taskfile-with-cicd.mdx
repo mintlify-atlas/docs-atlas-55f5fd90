@@ -1,0 +1,57 @@
+---
+title: Integrate Taskfile with CI/CD
+description: Reference and execute remote Taskfiles in your CI/CD pipeline using Taskfile's remote Taskfile support.
+---
+
+When integrating Taskfile into a CI/CD pipeline, you can **reference remote Taskfiles** directly without checking them into the repo.
+
+Supported remote reference formats:
+- `https://raw.githubusercontent.com/<username>/<repo>/<branch>/<path>/Taskfile.yml`
+- `https://github.com/<username>/<repo>.git//<path>/Taskfile.yml?ref=main` (note: `//` before the path is required)
+- `git@github.com/<username>/<repo>.git//<path>/Taskfile.yml?ref=main`
+
+<Steps>
+  <Step title="Enable the remote Taskfile feature">
+    This feature is experimental and must be enabled via an environment variable:
+
+    ```bash
+    export TASK_X_REMOTE_TASKFILES=1
+    ```
+  </Step>
+
+  <Step title="Include or execute a remote Taskfile">
+    **Option 1 — Run directly from the CLI:**
+
+    ```bash
+    task --taskfile https://raw.githubusercontent.com/go-task/task/main/website/static/Taskfile.yml
+    ```
+
+    **Option 2 — Include in your Taskfile:**
+
+    ```yaml title="Taskfile.yml"
+    version: '3'
+
+    includes:
+      # Without authentication
+      app-remote: https://raw.githubusercontent.com/go-task/task/main/website/static/Taskfile.yml
+      # With token authentication
+      app-remote-auth: https://{{.TOKEN}}@raw.githubusercontent.com/go-task/task/main/website/static/Taskfile.yml
+    ```
+
+    ```bash
+    task app-remote
+
+    export TOKEN=<your-token>
+    task app-remote-auth
+    ```
+  </Step>
+
+  <Step title="Force refresh the remote Taskfile cache (optional)">
+    By default, remote Taskfiles are cached in the `.task` directory. To ensure you always use the latest version:
+
+    ```bash
+    task --download -y  # Force re-download the remote Taskfile
+    task --clear-cache  # Clear all remote cache
+    ```
+  </Step>
+</Steps>

@@ -1,0 +1,58 @@
+---
+title: Cron Job
+description: Learn about Kubernetes CronJobs for scheduling jobs to run at specific times or regular intervals.
+---
+
+## Concept and Usage
+
+A CronJob **creates jobs on a time-based schedule**. It is useful when you want to run a job at a specific time or at regular intervals.
+
+<Tip>
+  Use [crontab.guru](https://crontab.guru/) to generate and validate cron expressions.
+</Tip>
+
+## Cron Schedule Format
+
+```
+┌─────────── minute (0-59)
+│  ┌────────── hour (0-23)
+│  │  ┌───────── day-of-month (1-31)
+│  │  │  ┌──────── month (1-12)
+│  │  │  │  ┌─────── day-of-week (0-6, 0 = Sunday)
+│  │  │  │  │
+*  *  *  *  *
+```
+
+| Field | Allowed Values |
+| --- | --- |
+| minute | 0–59 |
+| hour | 0–23 |
+| day-of-month | 1–31 |
+| month | 1–12 |
+| day-of-week | 0–6 (0 = Sunday) |
+
+## CronJob YAML
+
+```yaml title="cronjob.yaml"
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-cron-job
+spec:
+  schedule: "0 0 1 * *"  # At 00:00 on day-of-month 1
+  jobTemplate:
+    spec:                 # Job spec
+      completions: 3      # Run 3 successful pod completions
+      parallelism: 2      # Run 2 pods in parallel at a time
+      template:           # Pod template
+        spec:
+          containers:
+            - name: backup
+              image: busybox
+              command: ["echo", "Backup operation"]
+          restartPolicy: Never
+```
+
+```bash
+kubectl get cronjob
+```

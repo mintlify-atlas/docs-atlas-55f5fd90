@@ -1,0 +1,240 @@
+---
+title: Ingress
+description: Learn about Kubernetes Ingress for HTTP and HTTPS routing, including path-based routing, host-based routing, and TLS configuration.
+---
+
+## What is Ingress?
+
+Ingress is a **Kubernetes resource** that provides **HTTP and HTTPS routing** to services within a cluster. It **exposes HTTP/S routes** from outside the cluster to services by **defining rules** for routing traffic based on the **request's host and path**.
+
+```
+External Client → Ingress → Load Balancer → Service → Pods
+```
+
+<Note>
+  If you ask users to enter an IP address in the browser, they won't be happy. Ingress lets you **route traffic by DNS name** (e.g., `karchunt.com`) instead of a raw IP and port.
+</Note>
+
+<Warning>
+  You must **expose the Ingress controller** to the external world (via a Cloud Native Load Balancer or NodePort), otherwise Ingress resources will not work.
+
+  Ingress controller is **not deployed by default** in a Kubernetes cluster.
+</Warning>
+
+Ingress contains two main components:
+- **Ingress controller** — the software that processes Ingress rules
+- **Ingress resource** — the Kubernetes object that defines routing rules
+
+## Ingress Controller
+
+We use the **NGINX Ingress Controller** in these examples. It is recommended to use **Helm** to install it.
+
+- [Manifests installation](https://docs.nginx.com/nginx-ingress-controller/installation/installing-nic/installation-with-manifests/)
+- [Helm installation](https://docs.nginx.com/nginx-ingress-controller/installation/installing-nic/installation-with-helm/)
+
+## Ingress Resource
+
+Ingress resource is a **Kubernetes resource** that defines the rules for routing traffic to services.
+
+### Backed by a Single Service
+
+Routes all incoming traffic to `example-service` on port `80`.
+
+```yaml title="ingress.yaml"
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+spec:
+  defaultBackend:  # Default backend for all incoming traffic
+    service:
+      name: example-service
+      port:
+        number: 80
+```
+
+```bash
+kubectl get ingress example-ingress
+```
+
+### Path Based Routing
+
+If the URL does not match any of the defined rules, the request is routed to the `defaultBackend` service.
+
+```yaml title="ingress.yaml"
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+spec:
+  defaultBackend:
+    service:
+      name: example-service
+      port:
+        number: 80
+  rules:
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api-service
+                port:
+                  number: 8000
+          - path: /docs
+            pathType: Prefix
+            backend:
+              service:
+                name: docs-service
+                port:
+                  number: 8080
+```
+
+```bash
+kubectl create ingress example-ingress --default-backend=example-service:80 \\
+  --rule="/api=api-service:8000" \\
+  --rule="/docs=docs-service:8080"
+```
+
+### Name Based Routing
+
+Route traffic based on the request hostname:
+
+```yaml title="ingress.yaml"
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+spec:
+  rules:
+    - host: karchunt.com
+      http:
+        paths:
+          - path: "/api"
+            pathType: Prefix
+            backend:
+              service:
+                name: api-service
+                port:
+                  number: 8000
+    - host: karchuntan.com
+      http:
+        paths:
+          - path: "/docs"
+            pathType: Prefix
+            backend:
+              service:
+                name: docs-service
+                port:
+                  number: 8080
+```
+
+### Rewrite Target
+
+You may want to rewrite the URL path before forwarding the request to the backend. For example, if the pay application expects requests at `/` rather than `/pay`:
+
+<Tabs>
+  <Tab title="Ingress">
+    ```yaml title="ingress.yaml"
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: example-ingress
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /
+    spec:
+      rules:
+        - host: pay-karchunt.com
+          http:
+            paths:
+              - path: /pay
+                pathType: Exact
+                backend:
+                  service:
+                    name: pay-service
+                    port:
+                      number: 8000
+    ```
+
+    Accessing `http://pay-karchunt.com/pay` is **rewritten** to `http://pay-karchunt.com/` before being forwarded. **Format: `replace("/pay", "/")`**
+  </Tab>
+  <Tab title="Python Service">
+    ```python title="pay.py"
+    from fastapi import FastAPI
+
+    app = FastAPI(
+      title='Pay',
+      description='This is pay API',
+      version='0.1.0'
+    )
+
+    @app.post("/")
+    def pay():
+      return {'success': True}
+    ```
+  </Tab>
+</Tabs>
+
+**Regex rewrite example:**
+
+```yaml title="ingress.yaml"
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  name: rewrite
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: rewrite.bar.com
+      http:
+        paths:
+          - path: /something(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: http-svc
+                port:
+                  number: 80
+```
+
+Any characters captured by `(.*)` are assigned to `$2` and used in the `rewrite-target`:
+- `rewrite.bar.com/something` → `rewrite.bar.com/`
+- `rewrite.bar.com/something/` → `rewrite.bar.com/`
+- `rewrite.bar.com/something/new` → `rewrite.bar.com/new`
+
+### TLS
+
+<Steps>
+  <Step title="Create a TLS secret">
+    Refer to the [env-and-secrets-setup](/docs/kubernetes/env-and-secrets-setup#tls) page for information on creating a TLS secret.
+  </Step>
+  <Step title="Reference the TLS secret">
+    ```yaml title="ingress.yaml"
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: example-ingress
+    spec:
+      tls:
+        - hosts:
+            - karchunt.com
+          secretName: karchunt-tls  # Name of the TLS secret
+      rules:
+        - host: karchunt.com
+          http:
+            paths:
+              - path: "/api"
+                pathType: Prefix
+                backend:
+                  service:
+                    name: api-service
+                    port:
+                      number: 8000
+    ```
+  </Step>
+</Steps>

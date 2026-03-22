@@ -1,0 +1,197 @@
+---
+title: Stack
+description: Learn about the Stack data structure — a LIFO collection with O(1) push, pop, and peek — including three Python implementations using lists, manual tracking, and linked lists.
+---
+
+## What is a Stack?
+
+A **Stack** is a **Last In, First Out (LIFO)** data structure — the **last element added** is the **first element removed**, just like a stack of plates.
+
+<Note>
+  A stack can be implemented using either **arrays** or **linked lists**.
+</Note>
+
+### Key Operations
+
+| Operation | Description | Big-O |
+| --------- | ----------- | ----- |
+| **Push** | Add an element to the top of the stack | O(1) |
+| **Pop** | Remove and return the top element | O(1) |
+| **Peek / Top** | Return the top element without removing it | O(1) |
+
+<CardGroup cols={2}>
+  <Card title="Advantages">
+    - Simple to implement with O(1) push and pop
+    - Efficient for depth-first search and backtracking
+    - Well-suited for recursion, expression evaluation, and undo/redo
+  </Card>
+  <Card title="Disadvantages">
+    - Only the **top element** is directly accessible
+    - Fixed size if implemented with a static array
+    - Not suitable for **random access**
+    - Can cause **underflow** if popping from an empty stack
+  </Card>
+</CardGroup>
+
+### Real-World Applications
+
+- **Undo / Redo** functionality in text editors
+- **Browser history** (back/forward navigation)
+- **Recursion** call stack management
+- **Expression evaluation** and syntax parsing
+
+## Stack Implementation
+
+<Tabs>
+  <Tab title="Built-in List">
+    The simplest approach — use Python's built-in `list.append()` and `list.pop()` which both operate in O(1).
+
+    ```python title="stack.py"
+    class Stack:
+        def __init__(self) -> None:
+            self.items = []
+
+        def __len__(self) -> int:
+            return len(self.items)
+
+        def __str__(self) -> str:
+            return str(self.items)
+
+        def is_empty(self) -> bool:
+            return len(self.items) == 0
+
+        def push(self, item: int) -> None:
+            self.items.append(item)
+
+        def pop(self) -> int:
+            if self.is_empty():
+                raise IndexError("Stack Underflow: Cannot pop from an empty stack")
+            return self.items.pop()
+
+        def peek(self) -> int:
+            if self.is_empty():
+                raise IndexError("Stack Underflow: Cannot peek an empty stack")
+            return self.items[-1]
+
+    stack = Stack()
+    stack.push(1)
+    stack.push(2)
+    stack.push(3)
+
+    print(len(stack))    # 3
+    print(stack)         # [1, 2, 3]
+    print(stack.pop())   # 3
+    print(stack.peek())  # 2
+    print(stack)         # [1, 2]
+    ```
+  </Tab>
+  <Tab title="Manual Index Tracking">
+    A more explicit implementation that manually tracks the top index without relying on `list.pop()`.
+
+    ```python title="stack.py"
+    class Stack:
+        def __init__(self) -> None:
+            self.items = []
+            self.top = -1  # Index of the top element; -1 = empty stack
+
+        def __len__(self) -> int:
+            return self.top + 1
+
+        def __str__(self) -> str:
+            return str(self.items[:self.top + 1])
+
+        def is_empty(self) -> bool:
+            return self.top == -1
+
+        def push(self, item: int) -> None:
+            self.top += 1
+            self.items += [item]  # Manually extend the list
+
+        def pop(self) -> int:
+            if self.is_empty():
+                raise IndexError("Stack Underflow: Cannot pop from an empty stack")
+            item = self.items[self.top]
+            self.top -= 1
+            return item
+
+        def peek(self) -> int:
+            if self.is_empty():
+                raise IndexError("Stack Underflow: Cannot peek an empty stack")
+            return self.items[self.top]
+
+    stack = Stack()
+    stack.push(1)
+    stack.push(2)
+    stack.push(3)
+
+    print(len(stack))    # 3
+    print(stack)         # [1, 2, 3]
+    print(stack.pop())   # 3
+    print(stack.peek())  # 2
+    print(stack)         # [1, 2]
+    ```
+  </Tab>
+  <Tab title="Linked List">
+    A linked-list-based stack where each `push` inserts a new node at the head and each `pop` removes the head node. Avoids array resizing entirely.
+
+    ```python title="stack.py"
+    class Node:
+        def __init__(self, value):
+            self.value = value
+            self.next = None
+
+    class Stack:
+        def __init__(self):
+            self.top = None
+            self.size = 0
+
+        def __len__(self) -> int:
+            return self.size
+
+        def __str__(self) -> str:
+            result = []
+            current = self.top
+            while current:
+                result.append(current.value)
+                current = current.next
+            return str(result)
+
+        def is_empty(self) -> bool:
+            return self.size == 0
+
+        def push(self, item: int) -> None:
+            new_node = Node(item)
+            new_node.next = self.top
+            self.top = new_node
+            self.size += 1
+
+        def pop(self) -> int:
+            if self.is_empty():
+                raise IndexError("Stack Underflow: Cannot pop from an empty stack")
+            popped_value = self.top.value
+            self.top = self.top.next
+            self.size -= 1
+            return popped_value
+
+        def peek(self) -> int:
+            if self.is_empty():
+                raise IndexError("Stack Underflow: Cannot peek an empty stack")
+            return self.top.value
+
+    stack = Stack()
+    stack.push(1)
+    stack.push(2)
+    stack.push(3)
+
+    print(len(stack))    # 3
+    print(stack)         # [3, 2, 1]
+    print(stack.pop())   # 3
+    print(stack.peek())  # 2
+    print(stack)         # [2, 1]
+    ```
+
+    <Note>
+      In the linked-list implementation, the **top of the stack is the head of the list**. `push` prepends a node (O(1)) and `pop` removes the head (O(1)). No index shifting or array resizing is needed.
+    </Note>
+  </Tab>
+</Tabs>

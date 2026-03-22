@@ -1,0 +1,168 @@
+---
+title: Multipass on Windows
+description: Set up and use Multipass on Windows with VirtualBox as the backend, configure bridged networking, and enable port-forwarding to access VM services from the host.
+---
+
+## What is Multipass?
+
+Multipass is a **lightweight VM manager** that lets you **create and manage Ubuntu virtual machines** on your local machine. It provides a simple CLI to launch, configure, and manage VMs without the overhead of traditional virtualization solutions.
+
+## Installation
+
+You can install Multipass on Windows in two ways:
+
+**Manual installer** — download from the [official Windows download page](https://canonical.com/multipass/download/windows) and run the installer.
+
+**Microsoft Store** — search for Multipass in the [Microsoft Store](https://apps.microsoft.com/detail/xpfm0tp2cxz4pn?hl=en-US&gl=US) and install directly.
+
+<Warning>
+  Based on real-world experience, Multipass on Windows can consume significant CPU resources — particularly the `multipassd` process. Consider this before deploying it in resource-constrained environments.
+</Warning>
+
+## Known Issues on Windows
+
+- **Unable to launch instances** with the default Hyper-V backend — switching to VirtualBox resolves this.
+- **Cannot shell, SSH, or exec** into a VM instance when connected to a VPN (e.g. Cisco GlobalProtect). Routing VPN traffic from host to VM via `route add` may not work without IT team involvement.
+- **Cannot ping the VM instance IP** from the host machine while on VPN.
+
+## Setting Up a VM Instance
+
+The goal is to create a VM that supports **port-forwarding** to the host machine, even over a VPN network.
+
+<Steps>
+
+### Install VirtualBox and PsTools
+
+Download and install [VirtualBox](https://www.virtualbox.org/). Make sure to **install the VirtualBox driver as Administrator**.
+
+Download [PsTools](https://learn.microsoft.com/en-us/sysinternals/downloads/pstools) and add the `PsTools` directory to your **system PATH**. PsTools is needed to interact with VirtualBox GUI because Multipass runs as the **System account**.
+
+### Switch to the VirtualBox Driver
+
+By default, Multipass uses Hyper-V on Windows. Switch to VirtualBox:
+
+```bash
+multipass set local.driver=virtualbox
+```
+
+<Note>
+  If you see a `Waiting for Daemon to start` error, force-kill the service using PowerShell (as Administrator):
+
+  ```powershell
+  Get-WmiObject win32_service | Where-Object { $_.Name -eq "Multipass" } | Select-Object ProcessId
+  Stop-Process -Id <PID> -Force
+  ```
+
+  See [Multipass Service Stuck on Windows](/blog/windows-multipass-service-stuck) for full details.
+</Note>
+
+### Set a Bridged Network
+
+A bridged network allows the VM to obtain an IP on the same segment as the host. First, list available network interfaces:
+
+```powershell
+multipass networks
+```
+
+Sample output:
+
+```powershell
+Name         Type       Description
+Ethernet 5   ethernet   Lenovo USB Ethernet
+Wi-Fi        wifi       Intel(R) Wi-Fi 6 AX201 160MHz
+```
+
+Set the interface you use to connect to the internet:
+
+```bash
+multipass set local.bridged-network="Wi-Fi"
+```
+
+### Launch a VM Instance
+
+Make sure the bridged network is configured before launching.
+
+**Without SSH setup:**
+
+```bash
+multipass launch --bridged --name primary
+```
+
+**With SSH setup (using cloud-init):**
+
+Generate an SSH key pair:
+
+```bash
+ssh-keygen -C karchunt -f multipass-ssh-key
+```
+
+Copy the public key from `C:\Users\<user>\.ssh\multipass-ssh-key.pub`, then create a cloud-init config:
+
+```yaml title="cloud-init.yaml"
+users:
+  - default
+  - name: karchunt
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - <Your Public Key>
+```
+
+Launch with the config:
+
+```bash
+multipass launch --bridged --name primary --cloud-init cloud-init.yaml
+```
+
+### Access the VM Instance
+
+Use `multipass shell` or `multipass exec`:
+
+```bash
+multipass shell primary
+multipass exec primary -- bash
+```
+
+For **SSH access over VPN**, direct SSH to the VM IP will not work. Instead, use port-forwarding through localhost. To inspect or configure port-forwarding rules, launch the VirtualBox GUI via PsTools (run as Administrator):
+
+```powershell
+PsExec -s -i $env:VBOX_MSI_INSTALL_PATH\VirtualBox.exe
+```
+
+Navigate to **Settings > Network > NAT Adapter Network > Port Forwarding**, then connect via SSH:
+
+```bash
+ssh karchunt@localhost -i "C:\Users\karchunt\.ssh\multipass-ssh-key" -o StrictHostKeyChecking=no -p 56041
+```
+
+<Warning>
+  When inside the VM on a VPN network, `curl` requests may fail even if VPN traffic is not routed to the VM. Export proxy environment variables as needed:
+
+  ```bash
+  export http_proxy=...
+  export https_proxy=...
+  export no_proxy=...
+  ```
+</Warning>
+
+### (Optional) Launch a Web Server and Port-Forward
+
+Start a simple HTTP server inside the VM:
+
+```bash
+multipass shell primary
+python3 -m http.server  # exposes port 8000
+```
+
+Forward port `8000` from host to VM using PsTools:
+
+```powershell
+PsExec -s $env:VBOX_MSI_INSTALL_PATH\VBoxManage.exe controlvm "primary" natpf1 "myservice,tcp,,8000,,8000"
+```
+
+Access the server from the host at `http://localhost:8000`.
+
+<Tip>
+  For more on VirtualBox port-forwarding, see the [VirtualBox NAT documentation](https://www.virtualbox.org/manual/ch06.html#natforward).
+</Tip>
+
+</Steps>
